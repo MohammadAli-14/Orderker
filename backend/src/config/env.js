@@ -13,4 +13,5 @@ export const ENV = {
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
   ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+  CLIENT_URL: process.env.CLIENT_URL,
 };
