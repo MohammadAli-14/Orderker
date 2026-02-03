@@ -52,6 +52,15 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "Success" });
 });
 
+// Root route for basic server check
+app.get("/", (req, res) => {
+  res.status(200).json({ 
+    message: "Orderker API is running",
+    health: "/api/health",
+    docs: "API endpoints are available under /api/*"
+  });
+});
+
 // make our app ready for deployment
 if (ENV.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../admin/dist")));

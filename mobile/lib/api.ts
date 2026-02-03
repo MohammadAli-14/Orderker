@@ -2,11 +2,12 @@ import { useAuth } from "@clerk/clerk-expo";
 import axios from "axios";
 import { useEffect } from "react";
 
-// localhost will work in simulator
-const API_URL = "http://localhost:3000/api";
+// Use your deployed backend URL for physical device testing
+// Switch to localhost:3000 only when testing on simulator with local backend
+const API_URL = "https://orderker.onrender.com/api";
 
-// prod url will work in your physical device
-// const API_URL = "https://expo-ecommerce-th4ln.sevalla.app/api"
+// For local development with simulator:
+// const API_URL = "http://localhost:3000/api";
 
 const api = axios.create({
   baseURL: API_URL,
