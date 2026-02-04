@@ -62,15 +62,14 @@ app.get("/api/health", (req, res) => {
 app.use(express.static(path.join(__dirname, "../../admin/dist")));
 
 // Catch-all route to serve index.html for any frontend route
-// Note: Express 5 requires (.*) for a catch-all wildcard
-app.get("(.*)", (req, res) => {
-  // Only serve index.html if it's not an API route
-  if (!req.path.startsWith("/api")) {
-    res.sendFile(path.join(__dirname, "../../admin", "dist", "index.html"));
-  } else {
-    // If it's an API route that wasn't matched, send a 404
-    res.status(404).json({ message: "API endpoint not found" });
-  }
+// Note: Express 5 requires a Regex or named parameter for wildcards
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, "../../admin", "dist", "index.html"));
+});
+
+// For any unmatched /api routes, return a 404 JSON
+app.use("/api", (req, res) => {
+  res.status(404).json({ message: "API endpoint not found" });
 });
 
 const startServer = async () => {
