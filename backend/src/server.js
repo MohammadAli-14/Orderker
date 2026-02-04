@@ -18,10 +18,12 @@ import cartRoutes from "./routes/cart.route.js";
 import paymentRoutes from "./routes/payment.route.js";
 
 import uploadRoutes from "./routes/upload.route.js";
+import { fileURLToPath } from "url";
 
 const app = express();
 
-const __dirname = path.resolve();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // special handling: Stripe webhook needs raw body BEFORE any body parsing middleware
 // apply raw body parser conditionally only to webhook endpoint
@@ -56,27 +58,19 @@ app.get("/api/health", (req, res) => {
 });
 
 // make our app ready for deployment
-if (ENV.NODE_ENV === "production" || process.env.NODE_ENV === "production") {
-  // Serve static files from the admin/dist folder
-  app.use(express.static(path.join(__dirname, "../admin/dist")));
+// Serve static files from the admin/dist folder (relative to src)
+app.use(express.static(path.join(__dirname, "../../admin/dist")));
 
-  // Catch-all route to serve index.html for any frontend route
-  app.get("*", (req, res) => {
-    // Only serve index.html if it's not an API route
-    if (!req.path.startsWith("/api")) {
-      res.sendFile(path.join(__dirname, "../admin", "dist", "index.html"));
-    }
-  });
-} else {
-  // Root route for basic server check only in development
-  app.get("/", (req, res) => {
-    res.status(200).json({
-      message: "Orderker API is running (Development)",
-      health: "/api/health",
-      docs: "API endpoints are available under /api/*",
-    });
-  });
-}
+// Catch-all route to serve index.html for any frontend route
+app.get("*", (req, res) => {
+  // Only serve index.html if it's not an API route
+  if (!req.path.startsWith("/api")) {
+    res.sendFile(path.join(__dirname, "../../admin", "dist", "index.html"));
+  } else {
+    // If it's an API route that wasn't matched, send a 404
+    res.status(404).json({ message: "API endpoint not found" });
+  }
+});
 
 const startServer = async () => {
   await connectDB();
