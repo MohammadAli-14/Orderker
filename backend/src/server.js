@@ -62,7 +62,8 @@ app.get("/api/health", (req, res) => {
 app.use(express.static(path.join(__dirname, "../../admin/dist")));
 
 // Catch-all route to serve index.html for any frontend route
-app.get("*", (req, res) => {
+// Note: Express 5 requires (.*) for a catch-all wildcard
+app.get("(.*)", (req, res) => {
   // Only serve index.html if it's not an API route
   if (!req.path.startsWith("/api")) {
     res.sendFile(path.join(__dirname, "../../admin", "dist", "index.html"));
