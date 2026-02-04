@@ -2,6 +2,7 @@ import SafeScreen from "@/components/SafeScreen";
 import { useAddresses } from "@/hooks/useAddressess";
 import useCart from "@/hooks/useCart";
 import { useApi } from "@/lib/api";
+import { formatCurrency } from "@/lib/utils";
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useStripe } from "@stripe/stripe-react-native";
 import { useState } from "react";
@@ -283,10 +284,10 @@ const CartScreen = () => {
                     </Text>
                     <View className="flex-row items-center mt-2">
                       <Text className="text-primary font-bold text-2xl">
-                        ₨{item.product.price * item.quantity}
+                        {formatCurrency(item.product.price * item.quantity)}
                       </Text>
                       <Text className="text-text-secondary text-sm ml-2">
-                        ₨{item.product.price} each
+                        {formatCurrency(item.product.price)} each
                       </Text>
                     </View>
                   </View>
@@ -419,7 +420,7 @@ const CartScreen = () => {
             </Text>
           </View>
           <View className="flex-row items-center">
-            <Text className="text-text-primary font-bold text-xl">₨{Math.round(total)}</Text>
+            <Text className="text-text-primary font-bold text-xl">{formatCurrency(total)}</Text>
           </View>
         </View>
 

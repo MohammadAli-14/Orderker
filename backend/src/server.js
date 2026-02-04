@@ -55,21 +55,26 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "Success" });
 });
 
-// Root route for basic server check
-app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "Orderker API is running",
-    health: "/api/health",
-    docs: "API endpoints are available under /api/*"
-  });
-});
-
 // make our app ready for deployment
-if (ENV.NODE_ENV === "production") {
+if (ENV.NODE_ENV === "production" || process.env.NODE_ENV === "production") {
+  // Serve static files from the admin/dist folder
   app.use(express.static(path.join(__dirname, "../admin/dist")));
 
-  app.get("/{*any}", (req, res) => {
-    res.sendFile(path.join(__dirname, "../admin", "dist", "index.html"));
+  // Catch-all route to serve index.html for any frontend route
+  app.get("*", (req, res) => {
+    // Only serve index.html if it's not an API route
+    if (!req.path.startsWith("/api")) {
+      res.sendFile(path.join(__dirname, "../admin", "dist", "index.html"));
+    }
+  });
+} else {
+  // Root route for basic server check only in development
+  app.get("/", (req, res) => {
+    res.status(200).json({
+      message: "Orderker API is running (Development)",
+      health: "/api/health",
+      docs: "API endpoints are available under /api/*",
+    });
   });
 }
 

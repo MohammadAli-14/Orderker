@@ -1,5 +1,5 @@
 import { orderApi } from "../lib/api";
-import { formatDate } from "../lib/utils";
+import { formatDate, formatCurrency } from "../lib/utils";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -81,7 +81,9 @@ function OrdersPage() {
                         </td>
 
                         <td>
-                          <div className="font-medium">{totalQuantity} items</div>
+                          <div className="font-medium">
+                            {totalQuantity} {totalQuantity === 1 ? "item" : "items"}
+                          </div>
                           <div className="text-sm opacity-60">
                             {order.orderItems[0]?.name}
                             {order.orderItems.length > 1 && ` +${order.orderItems.length - 1} more`}
@@ -89,14 +91,14 @@ function OrdersPage() {
                         </td>
 
                         <td>
-                          <span className="font-semibold">${order.totalPrice.toFixed(2)}</span>
+                          <span className="font-semibold">{formatCurrency(order.totalPrice)}</span>
                         </td>
 
                         <td>
                           <select
                             value={order.status}
                             onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                            className="select select-sm"
+                            className="select select-sm select-bordered"
                             disabled={updateStatusMutation.isPending}
                           >
                             <option value="pending">Pending</option>
@@ -106,22 +108,26 @@ function OrdersPage() {
                         </td>
 
                         <td>
-                          <div className="font-medium text-sm">
-                            {order.paymentMethod === "Stripe" ? "Card (Stripe)" : order.paymentMethod}
+                          <div className="flex flex-col">
+                            <div className="font-medium text-sm">
+                              {order.paymentMethod === "Stripe" ? "Card" : order.paymentMethod}
+                            </div>
+                            {order.paymentProof?.receiptUrl && (
+                              <a
+                                href={order.paymentProof.receiptUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary text-xs link link-hover font-semibold mt-1"
+                              >
+                                View Receipt
+                              </a>
+                            )}
+                            {order.paymentProof?.transactionId && (
+                              <div className="text-[10px] opacity-60 mt-1">
+                                ID: {order.paymentProof.transactionId}
+                              </div>
+                            )}
                           </div>
-                          {order.paymentProof?.receiptUrl && (
-                            <a
-                              href={order.paymentProof.receiptUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary text-xs link link-hover"
-                            >
-                              View Receipt
-                            </a>
-                          )}
-                          {order.paymentProof?.transactionId && (
-                            <div className="text-xs opacity-60">ID: {order.paymentProof.transactionId}</div>
-                          )}
                         </td>
 
                         <td>

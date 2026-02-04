@@ -2,7 +2,7 @@ import { useState } from "react";
 import { PlusIcon, PencilIcon, Trash2Icon, XIcon, ImageIcon } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productApi } from "../lib/api";
-import { getStockStatusBadge } from "../lib/utils";
+import { getStockStatusBadge, formatCurrency } from "../lib/utils";
 
 function ProductsPage() {
   const [showModal, setShowModal] = useState(false);
@@ -156,7 +156,7 @@ function ProductsPage() {
                     <div className="flex items-center gap-6 mt-4">
                       <div>
                         <p className="text-xs text-base-content/70">Price</p>
-                        <p className="font-bold text-lg">₨{product.price}</p>
+                        <p className="font-bold text-lg">{formatCurrency(product.price)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-base-content/70">Stock</p>
@@ -250,7 +250,7 @@ function ProductsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="form-control">
                 <label className="label">
-                  <span>Price (₨)</span>
+                  <span>Price (Rs.)</span>
                 </label>
                 <input
                   type="number"

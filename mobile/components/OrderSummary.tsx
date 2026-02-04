@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/utils";
 import { View, Text } from "react-native";
 
 interface OrderSummaryProps {
@@ -14,32 +15,32 @@ export default function OrderSummary({ subtotal, shipping, tax, total }: OrderSu
         <Text className="text-text-primary text-xl font-bold mb-4">Summary</Text>
 
         <View className="space-y-3">
-          <View className="flex-row justify-between items-center">
+          <View className="flex-row justify-between items-center mb-1">
             <Text className="text-text-secondary text-base">Subtotal</Text>
             <Text className="text-text-primary font-semibold text-base">
-              ₨{Math.round(subtotal)}
+              {formatCurrency(subtotal)}
             </Text>
           </View>
 
-          <View className="flex-row justify-between items-center">
+          <View className="flex-row justify-between items-center mb-1">
             <Text className="text-text-secondary text-base">Delivery</Text>
             <Text className="text-text-primary font-semibold text-base">
-              ₨{Math.round(shipping)}
+              {formatCurrency(shipping)}
             </Text>
           </View>
 
-          <View className="flex-row justify-between items-center">
+          <View className="flex-row justify-between items-center mb-1">
             <Text className="text-text-secondary text-base">GST (5%)</Text>
-            <Text className="text-text-primary font-semibold text-base">₨{Math.round(tax)}</Text>
+            <Text className="text-text-primary font-semibold text-base">{formatCurrency(tax)}</Text>
           </View>
 
           {/* Divider */}
           <View className="border-t border-background-lighter pt-3 mt-1" />
 
           {/* Total */}
-          <View className="flex-row justify-between items-center">
+          <View className="flex-row justify-between items-center mt-2">
             <Text className="text-text-primary font-bold text-lg">Total</Text>
-            <Text className="text-primary font-bold text-2xl">₨{Math.round(total)}</Text>
+            <Text className="text-primary font-bold text-2xl">{formatCurrency(total)}</Text>
           </View>
         </View>
       </View>

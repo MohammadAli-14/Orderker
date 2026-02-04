@@ -2,7 +2,7 @@ import RatingModal from "@/components/RatingModal";
 import SafeScreen from "@/components/SafeScreen";
 import { useOrders } from "@/hooks/useOrders";
 import { useReviews } from "@/hooks/useReviews";
-import { capitalizeFirstLetter, formatDate, getStatusColor } from "@/lib/utils";
+import { capitalizeFirstLetter, formatDate, getStatusColor, formatCurrency } from "@/lib/utils";
 import { Order } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -150,7 +150,7 @@ function OrdersScreen() {
                     <View>
                       <Text className="text-text-secondary text-xs mb-1">{totalItems} items</Text>
                       <Text className="text-primary font-bold text-xl">
-                        ₨{Math.round(order.totalPrice)}
+                        {formatCurrency(order.totalPrice)}
                       </Text>
                     </View>
 

@@ -19,3 +19,10 @@ export const getStatusColor = (status: string) => {
       return "#666";
   }
 };
+
+export const formatCurrency = (amount: number | string) => {
+  return `Rs. ${Number(amount).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
+};

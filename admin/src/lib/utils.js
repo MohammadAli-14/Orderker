@@ -33,3 +33,10 @@ export const formatDate = (dateString) => {
     year: "numeric",
   });
 };
+
+export const formatCurrency = (amount) => {
+  return `Rs. ${Number(amount).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { orderApi, statsApi } from "../lib/api";
-import { DollarSignIcon, PackageIcon, ShoppingBagIcon, UsersIcon } from "lucide-react";
-import { capitalizeText, formatDate, getOrderStatusBadge } from "../lib/utils";
+import { BanknoteIcon, PackageIcon, ShoppingBagIcon, UsersIcon } from "lucide-react";
+import { capitalizeText, formatDate, formatCurrency, getOrderStatusBadge } from "../lib/utils";
 
 function DashboardPage() {
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
@@ -21,8 +21,8 @@ function DashboardPage() {
   const statsCards = [
     {
       name: "Total Revenue",
-      value: statsLoading ? "..." : `$${statsData?.totalRevenue?.toFixed(2) || 0}`,
-      icon: <DollarSignIcon className="size-8" />,
+      value: statsLoading ? "..." : formatCurrency(statsData?.totalRevenue || 0),
+      icon: <BanknoteIcon className="size-8" />,
     },
     {
       name: "Total Orders",
@@ -74,6 +74,7 @@ function DashboardPage() {
                     <th>Customer</th>
                     <th>Items</th>
                     <th>Amount</th>
+                    <th>Payment</th>
                     <th>Status</th>
                     <th>Date</th>
                   </tr>
@@ -90,7 +91,7 @@ function DashboardPage() {
                         <div>
                           <div className="font-medium">{order.shippingAddress.fullName}</div>
                           <div className="text-sm opacity-60">
-                            {order.orderItems.length} item(s)
+                            {order.orderItems.length} {order.orderItems.length === 1 ? "item" : "items"}
                           </div>
                         </div>
                       </td>
@@ -103,11 +104,17 @@ function DashboardPage() {
                       </td>
 
                       <td>
-                        <span className="font-semibold">${order.totalPrice.toFixed(2)}</span>
+                        <span className="font-semibold">{formatCurrency(order.totalPrice)}</span>
                       </td>
 
                       <td>
-                        <div className={`badge ${getOrderStatusBadge(order.status)}`}>
+                        <div className="font-medium text-xs">
+                          {order.paymentMethod === "Stripe" ? "Card" : order.paymentMethod}
+                        </div>
+                      </td>
+
+                      <td>
+                        <div className={`badge badge-sm ${getOrderStatusBadge(order.status)}`}>
                           {capitalizeText(order.status)}
                         </div>
                       </td>
