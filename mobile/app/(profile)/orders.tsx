@@ -25,8 +25,11 @@ function OrdersScreen() {
     // init ratings for all product to 0 - resettin the state for each product
     const initialRatings: { [key: string]: number } = {};
     order.orderItems.forEach((item) => {
-      const productId = item.product._id;
-      initialRatings[productId] = 0;
+      // Use product._id if available, otherwise skip (product was deleted)
+      const productId = item.product?._id;
+      if (productId) {
+        initialRatings[productId] = 0;
+      }
     });
     setProductRatings(initialRatings);
   };
@@ -34,8 +37,11 @@ function OrdersScreen() {
   const handleSubmitRating = async () => {
     if (!selectedOrder) return;
 
+    // Filter items with valid products
+    const validItems = selectedOrder.orderItems.filter((item) => item.product?._id);
+
     // check if all products have been rated
-    const allRated = Object.values(productRatings).every((rating) => rating > 0);
+    const allRated = validItems.every((item) => productRatings[item.product._id] > 0);
     if (!allRated) {
       Alert.alert("Error", "Please rate all products");
       return;
@@ -43,7 +49,7 @@ function OrdersScreen() {
 
     try {
       await Promise.all(
-        selectedOrder.orderItems.map((item) => {
+        validItems.map((item) => {
           createReviewAsync({
             productId: item.product._id,
             orderId: selectedOrder._id,
@@ -144,7 +150,7 @@ function OrdersScreen() {
                     <View>
                       <Text className="text-text-secondary text-xs mb-1">{totalItems} items</Text>
                       <Text className="text-primary font-bold text-xl">
-                        ${order.totalPrice.toFixed(2)}
+                        ₨{Math.round(order.totalPrice)}
                       </Text>
                     </View>
 

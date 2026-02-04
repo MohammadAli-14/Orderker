@@ -50,17 +50,19 @@ const RatingModal = ({
               </View>
 
               <ScrollView className="mb-4">
-                {order?.orderItems.map((item, index) => {
-                  const productId = item.product._id;
-                  const currentRating = productRatings[productId] || 0;
+                {order?.orderItems
+                  .filter((item) => item.product?._id)
+                  .map((item, index, filteredItems) => {
+                    const productId = item.product._id;
+                    const currentRating = productRatings[productId] || 0;
 
-                  return (
-                    <View
-                      key={item._id}
-                      className={`bg-background-lighter rounded-2xl p-4 ${
-                        index < order.orderItems.length - 1 ? "mb-3" : ""
-                      }`}
-                    >
+                    return (
+                      <View
+                        key={item._id}
+                        className={`bg-background-lighter rounded-2xl p-4 ${
+                          index < filteredItems.length - 1 ? "mb-3" : ""
+                        }`}
+                      >
                       <View className="flex-row items-center mb-3">
                         <Image
                           source={item.image}
@@ -74,7 +76,7 @@ const RatingModal = ({
                             {item.name}
                           </Text>
                           <Text className="text-text-secondary text-xs mt-1">
-                            Qty: {item.quantity} • ${item.price.toFixed(2)}
+                            Qty: {item.quantity} • ₨{item.price}
                           </Text>
                         </View>
                       </View>

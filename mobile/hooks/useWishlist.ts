@@ -34,8 +34,11 @@ const useWishlist = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["wishlist"] }),
   });
 
+  // Filter out null items (products that were deleted)
+  const validWishlist = wishlist?.filter((product) => product !== null) ?? [];
+
   const isInWishlist = (productId: string) => {
-    return wishlist?.some((product) => product._id === productId) ?? false;
+    return validWishlist.some((product) => product._id === productId);
   };
 
   const toggleWishlist = (productId: string) => {
@@ -47,10 +50,10 @@ const useWishlist = () => {
   };
 
   return {
-    wishlist: wishlist || [],
+    wishlist: validWishlist,
     isLoading,
     isError,
-    wishlistCount: wishlist?.length || 0,
+    wishlistCount: validWishlist.length,
     isInWishlist,
     toggleWishlist,
     addToWishlist: addToWishlistMutation.mutate,

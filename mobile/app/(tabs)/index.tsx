@@ -4,14 +4,19 @@ import useProducts from "@/hooks/useProducts";
 
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Image } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput } from "react-native";
 
 const CATEGORIES = [
   { name: "All", icon: "grid-outline" as const },
-  { name: "Electronics", image: require("@/assets/images/electronics.png") },
-  { name: "Fashion", image: require("@/assets/images/fashion.png") },
-  { name: "Sports", image: require("@/assets/images/sports.png") },
-  { name: "Books", image: require("@/assets/images/books.png") },
+  { name: "Sabzi", icon: "leaf-outline" as const },
+  { name: "Phal", icon: "nutrition-outline" as const },
+  { name: "Staples", icon: "basket-outline" as const },
+  { name: "Dairy & Eggs", icon: "egg-outline" as const },
+  { name: "Masalay", icon: "flame-outline" as const },
+  { name: "Snacks", icon: "fast-food-outline" as const },
+  { name: "Beverages", icon: "cafe-outline" as const },
+  { name: "Household", icon: "home-outline" as const },
+  { name: "Personal Care", icon: "body-outline" as const },
 ];
 
 const ShopScreen = () => {
@@ -51,8 +56,8 @@ const ShopScreen = () => {
         <View className="px-6 pb-4 pt-6">
           <View className="flex-row items-center justify-between mb-6">
             <View>
-              <Text className="text-text-primary text-3xl font-bold tracking-tight">Shop</Text>
-              <Text className="text-text-secondary text-sm mt-1">Browse all products</Text>
+              <Text className="text-text-primary text-3xl font-bold tracking-tight">Orderker</Text>
+              <Text className="text-text-secondary text-sm mt-1">Karachi's Online Bazar</Text>
             </View>
 
             <TouchableOpacity className="bg-surface/50 p-3 rounded-full" activeOpacity={0.7}>
@@ -86,17 +91,16 @@ const ShopScreen = () => {
                 <TouchableOpacity
                   key={category.name}
                   onPress={() => setSelectedCategory(category.name)}
-                  className={`mr-3 rounded-2xl size-20 overflow-hidden items-center justify-center ${isSelected ? "bg-primary" : "bg-surface"}`}
+                  className={`mr-3 rounded-2xl px-4 py-3 items-center justify-center ${isSelected ? "bg-primary" : "bg-surface"}`}
                 >
-                  {category.icon ? (
-                    <Ionicons
-                      name={category.icon}
-                      size={36}
-                      color={isSelected ? "#121212" : "#fff"}
-                    />
-                  ) : (
-                    <Image source={category.image} className="size-12" resizeMode="contain" />
-                  )}
+                  <Ionicons
+                    name={category.icon}
+                    size={24}
+                    color={isSelected ? "#121212" : "#fff"}
+                  />
+                  <Text className={`text-xs mt-1 font-medium ${isSelected ? "text-background" : "text-text-primary"}`}>
+                    {category.name}
+                  </Text>
                 </TouchableOpacity>
               );
             })}

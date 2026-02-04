@@ -73,6 +73,15 @@ const orderSchema = new mongoose.Schema(
       id: String,
       status: String,
     },
+    paymentMethod: {
+      type: String,
+      enum: ["Stripe", "COD", "Easypaisa", "JazzCash"],
+      default: "Stripe",
+    },
+    paymentProof: {
+      transactionId: String,
+      receiptUrl: String,
+    },
     totalPrice: {
       type: Number,
       required: true,

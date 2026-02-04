@@ -86,7 +86,7 @@ const ProductsGrid = ({ products, isLoading, isError }: ProductsGridProps) => {
         </View>
 
         <View className="flex-row items-center justify-between">
-          <Text className="text-primary font-bold text-lg">${product.price.toFixed(2)}</Text>
+          <Text className="text-primary font-bold text-lg">₨{product.price}</Text>
 
           <TouchableOpacity
             className="bg-primary rounded-full w-8 h-8 items-center justify-center"

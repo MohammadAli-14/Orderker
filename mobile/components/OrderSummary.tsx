@@ -17,20 +17,20 @@ export default function OrderSummary({ subtotal, shipping, tax, total }: OrderSu
           <View className="flex-row justify-between items-center">
             <Text className="text-text-secondary text-base">Subtotal</Text>
             <Text className="text-text-primary font-semibold text-base">
-              ${subtotal.toFixed(2)}
+              ₨{Math.round(subtotal)}
             </Text>
           </View>
 
           <View className="flex-row justify-between items-center">
-            <Text className="text-text-secondary text-base">Shipping</Text>
+            <Text className="text-text-secondary text-base">Delivery</Text>
             <Text className="text-text-primary font-semibold text-base">
-              ${shipping.toFixed(2)}
+              ₨{Math.round(shipping)}
             </Text>
           </View>
 
           <View className="flex-row justify-between items-center">
-            <Text className="text-text-secondary text-base">Tax</Text>
-            <Text className="text-text-primary font-semibold text-base">${tax.toFixed(2)}</Text>
+            <Text className="text-text-secondary text-base">GST (5%)</Text>
+            <Text className="text-text-primary font-semibold text-base">₨{Math.round(tax)}</Text>
           </View>
 
           {/* Divider */}
@@ -39,7 +39,7 @@ export default function OrderSummary({ subtotal, shipping, tax, total }: OrderSu
           {/* Total */}
           <View className="flex-row justify-between items-center">
             <Text className="text-text-primary font-bold text-lg">Total</Text>
-            <Text className="text-primary font-bold text-2xl">${total.toFixed(2)}</Text>
+            <Text className="text-primary font-bold text-2xl">₨{Math.round(total)}</Text>
           </View>
         </View>
       </View>

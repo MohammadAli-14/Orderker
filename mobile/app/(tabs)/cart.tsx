@@ -12,6 +12,11 @@ import OrderSummary from "@/components/OrderSummary";
 import AddressSelectionModal from "@/components/AddressSelectionModal";
 
 import * as Sentry from "@sentry/react-native";
+import * as ImagePicker from "expo-image-picker";
+import { Platform, TextInput } from "react-native";
+import axios from "axios";
+
+type PaymentMethod = "Stripe" | "COD" | "Easypaisa" | "JazzCash";
 
 const CartScreen = () => {
   const api = useApi();
@@ -34,10 +39,50 @@ const CartScreen = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
 
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Stripe");
+  const [transactionId, setTransactionId] = useState("");
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setReceiptImage(result.assets[0].uri);
+    }
+  };
+
+  const uploadReceipt = async (uri: string): Promise<string> => {
+    const formData = new FormData();
+
+    // Normalize URI for Android/iOS
+    const localUri = Platform.OS === "android" ? uri : uri.replace("file://", "");
+    const filename = uri.split("/").pop() || "receipt.jpg";
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : `image`;
+
+    // @ts-ignore
+    formData.append("image", {
+      uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
+      name: filename,
+      type: type,
+    });
+
+    const { data } = await api.post("/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return data.imageUrl;
+  };
+
   const cartItems = cart?.items || [];
   const subtotal = cartTotal;
-  const shipping = 10.0; // $10 shipping fee
-  const tax = subtotal * 0.08; // 8% tax
+  const shipping = 150; // Rs. 150 shipping fee for Karachi
+  const tax = subtotal * 0.05; // 5% GST
   const total = subtotal + shipping + tax;
 
   const handleQuantityChange = (productId: string, currentQuantity: number, change: number) => {
@@ -77,19 +122,87 @@ const CartScreen = () => {
   const handleProceedWithPayment = async (selectedAddress: Address) => {
     setAddressModalVisible(false);
 
+    // Validate Manual Payment
+    if (["Easypaisa", "JazzCash"].includes(paymentMethod)) {
+      if (!transactionId) {
+        Alert.alert("Error", "Please enter the Transaction ID");
+        return;
+      }
+      if (!receiptImage) {
+        Alert.alert("Error", "Please upload the payment receipt");
+        return;
+      }
+    }
+
     // log chechkout initiated
     Sentry.logger.info("Checkout initiated", {
       itemCount: cartItemCount,
       total: total.toFixed(2),
       city: selectedAddress.city,
+      paymentMethod,
     });
 
     try {
       setPaymentLoading(true);
 
-      // create payment intent with cart items and shipping address
-      const { data } = await api.post("/payment/create-intent", {
-        cartItems,
+      if (paymentMethod === "Stripe") {
+        // create payment intent with cart items and shipping address
+        const { data } = await api.post("/payment/create-intent", {
+          cartItems,
+          shippingAddress: {
+            fullName: selectedAddress.fullName,
+            streetAddress: selectedAddress.streetAddress,
+            city: selectedAddress.city,
+            state: selectedAddress.state,
+            zipCode: selectedAddress.zipCode,
+            phoneNumber: selectedAddress.phoneNumber,
+          },
+        });
+
+        const { error: initError } = await initPaymentSheet({
+          paymentIntentClientSecret: data.clientSecret,
+          merchantDisplayName: "OrderKer Store",
+        });
+
+        if (initError) {
+          Alert.alert("Error", initError.message);
+          setPaymentLoading(false);
+          return;
+        }
+
+        // present payment sheet
+        const { error: presentError } = await presentPaymentSheet();
+
+        if (presentError) {
+          Alert.alert("Payment cancelled", presentError.message);
+          return; // Stop execution
+        }
+
+        // Success handled by webhook mostly, but we clear cart here
+        Alert.alert("Success", "Your payment was successful!", [{ text: "OK" }]);
+        clearCart();
+        return;
+      }
+
+      // Handle COD and Manual Payments
+      let paymentProof = null;
+      if (["Easypaisa", "JazzCash"].includes(paymentMethod) && receiptImage) {
+        const imageUrl = await uploadReceipt(receiptImage);
+        paymentProof = {
+          transactionId,
+          receiptUrl: imageUrl,
+        };
+      }
+
+      // Create Order Directly
+      await api.post("/orders", {
+        orderItems: cartItems.map((item) => ({
+          product: item.product._id, // backend expects product ID string
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.product.price,
+          image: item.product.images[0],
+        })),
         shippingAddress: {
           fullName: selectedAddress.fullName,
           streetAddress: selectedAddress.streetAddress,
@@ -98,57 +211,33 @@ const CartScreen = () => {
           zipCode: selectedAddress.zipCode,
           phoneNumber: selectedAddress.phoneNumber,
         },
+        paymentMethod,
+        paymentProof,
+        totalPrice: total,
       });
 
-      const { error: initError } = await initPaymentSheet({
-        paymentIntentClientSecret: data.clientSecret,
-        merchantDisplayName: "Your Store Name",
-      });
+      Alert.alert("Success", "Your order has been placed successfully!", [
+        { text: "OK", onPress: () => { } },
+      ]);
+      clearCart();
+      setTransactionId("");
+      setReceiptImage(null);
 
-      if (initError) {
-        Sentry.logger.error("Payment sheet init failed", {
-          errorCode: initError.code,
-          errorMessage: initError.message,
-          cartTotal: total,
-          itemCount: cartItems.length,
-        });
-
-        Alert.alert("Error", initError.message);
-        setPaymentLoading(false);
-        return;
-      }
-
-      // present payment sheet
-      const { error: presentError } = await presentPaymentSheet();
-
-      if (presentError) {
-        Sentry.logger.error("Payment cancelled", {
-          errorCode: presentError.code,
-          errorMessage: presentError.message,
-          cartTotal: total,
-          itemCount: cartItems.length,
-        });
-
-        Alert.alert("Payment cancelled", presentError.message);
-      } else {
-        Sentry.logger.info("Payment successful", {
-          total: total.toFixed(2),
-          itemCount: cartItems.length,
-        });
-
-        Alert.alert("Success", "Your payment was successful! Your order is being processed.", [
-          { text: "OK", onPress: () => {} },
-        ]);
-        clearCart();
-      }
     } catch (error) {
-      Sentry.logger.error("Payment failed", {
+      Sentry.logger.error("Order failed", {
         error: error instanceof Error ? error.message : "Unknown error",
         cartTotal: total,
-        itemCount: cartItems.length,
+        paymentMethod,
       });
 
-      Alert.alert("Error", "Failed to process payment");
+      let msg = "Failed to place order";
+      if (axios.isAxiosError(error)) {
+        msg = error.response?.data?.error || error.message;
+      } else if (error instanceof Error) {
+        msg = error.message;
+      }
+
+      Alert.alert("Error", msg);
     } finally {
       setPaymentLoading(false);
     }
@@ -194,10 +283,10 @@ const CartScreen = () => {
                     </Text>
                     <View className="flex-row items-center mt-2">
                       <Text className="text-primary font-bold text-2xl">
-                        ${(item.product.price * item.quantity).toFixed(2)}
+                        ₨{item.product.price * item.quantity}
                       </Text>
                       <Text className="text-text-secondary text-sm ml-2">
-                        ${item.product.price.toFixed(2)} each
+                        ₨{item.product.price} each
                       </Text>
                     </View>
                   </View>
@@ -248,6 +337,72 @@ const CartScreen = () => {
           ))}
         </View>
 
+        {/* Payment Selection */}
+        <View className="px-6 mt-6">
+          <Text className="text-text-primary text-xl font-bold mb-4">Payment Method</Text>
+          <View className="gap-3">
+            {(["Stripe", "COD", "Easypaisa", "JazzCash"] as PaymentMethod[]).map((method) => (
+              <TouchableOpacity
+                key={method}
+                className={`p-4 rounded-2xl border ${paymentMethod === method
+                  ? "bg-primary/10 border-primary"
+                  : "bg-surface border-transparent"
+                  }`}
+                onPress={() => setPaymentMethod(method)}
+              >
+                <View className="flex-row items-center justify-between">
+                  <Text
+                    className={`font-semibold text-lg ${paymentMethod === method ? "text-primary" : "text-text-primary"
+                      }`}
+                  >
+                    {method === "Stripe" ? "Credit/Debit Card" : method}
+                  </Text>
+                  {paymentMethod === method && (
+                    <Ionicons name="checkmark-circle" size={24} color="#1DB954" />
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Manual Payment Inputs */}
+          {["Easypaisa", "JazzCash"].includes(paymentMethod) && (
+            <View className="mt-4 p-4 bg-surface rounded-2xl">
+              <Text className="text-text-secondary mb-2">Transaction Details</Text>
+
+              <Text className="text-text-secondary text-sm mb-2 opacity-70">
+                Please send amount to 0300-1234567 and upload proof.
+              </Text>
+
+              <TextInput
+                className="bg-background p-4 rounded-xl text-text-primary mb-3"
+                placeholder="Enter Transaction ID"
+                placeholderTextColor="#666"
+                value={transactionId}
+                onChangeText={setTransactionId}
+              />
+
+              <TouchableOpacity
+                className="bg-background p-4 rounded-xl flex-row items-center justify-center border border-dashed border-gray-600"
+                onPress={pickImage}
+              >
+                {receiptImage ? (
+                  <Image
+                    source={{ uri: receiptImage }}
+                    style={{ width: "100%", height: 150, borderRadius: 8 }}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <>
+                    <Ionicons name="cloud-upload-outline" size={24} color="#666" />
+                    <Text className="text-text-secondary ml-2">Upload Receipt</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
         <OrderSummary subtotal={subtotal} shipping={shipping} tax={tax} total={total} />
       </ScrollView>
 
@@ -264,7 +419,7 @@ const CartScreen = () => {
             </Text>
           </View>
           <View className="flex-row items-center">
-            <Text className="text-text-primary font-bold text-xl">${total.toFixed(2)}</Text>
+            <Text className="text-text-primary font-bold text-xl">₨{Math.round(total)}</Text>
           </View>
         </View>
 

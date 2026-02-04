@@ -5,7 +5,12 @@ import { Review } from "../models/review.model.js";
 export async function createOrder(req, res) {
   try {
     const user = req.user;
-    const { orderItems, shippingAddress, paymentResult, totalPrice } = req.body;
+    const { orderItems, shippingAddress, paymentResult, totalPrice, paymentMethod, paymentProof } = req.body;
+
+    console.log(`Creating order for user ${user.clerkId} with method: ${paymentMethod}`);
+    if (paymentProof) {
+      console.log(`Payment Proof received: TxnID: ${paymentProof.transactionId}, URL: ${paymentProof.receiptUrl}`);
+    }
 
     if (!orderItems || orderItems.length === 0) {
       return res.status(400).json({ error: "No order items" });
@@ -13,7 +18,8 @@ export async function createOrder(req, res) {
 
     // validate products and stock
     for (const item of orderItems) {
-      const product = await Product.findById(item.product._id);
+      const productId = item.product?._id || item.product;
+      const product = await Product.findById(productId);
       if (!product) {
         return res.status(404).json({ error: `Product ${item.name} not found` });
       }
@@ -22,18 +28,42 @@ export async function createOrder(req, res) {
       }
     }
 
+    let finalPaymentResult = paymentResult;
+
+    // Handle COD
+    if (paymentMethod === 'COD') {
+      finalPaymentResult = {
+        id: `COD-${Date.now()}`,
+        status: 'pending'
+      };
+    }
+
+    // Handle Easypaisa/JazzCash
+    if (['Easypaisa', 'JazzCash'].includes(paymentMethod)) {
+      if (!paymentProof?.transactionId || !paymentProof?.receiptUrl) {
+        return res.status(400).json({ error: "Transaction ID and receipt are required" });
+      }
+      finalPaymentResult = {
+        id: paymentProof.transactionId,
+        status: 'pending' // Admin manually verifies
+      };
+    }
+
     const order = await Order.create({
       user: user._id,
       clerkId: user.clerkId,
       orderItems,
       shippingAddress,
-      paymentResult,
+      paymentResult: finalPaymentResult,
+      paymentMethod: paymentMethod || "Stripe",
+      paymentProof,
       totalPrice,
     });
 
     // update product stock
     for (const item of orderItems) {
-      await Product.findByIdAndUpdate(item.product._id, {
+      const productId = item.product?._id || item.product;
+      await Product.findByIdAndUpdate(productId, {
         $inc: { stock: -item.quantity },
       });
     }

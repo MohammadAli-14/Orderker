@@ -55,6 +55,7 @@ function OrdersPage() {
                     <th>Items</th>
                     <th>Total</th>
                     <th>Status</th>
+                    <th>Payment</th>
                     <th>Date</th>
                   </tr>
                 </thead>
@@ -102,6 +103,25 @@ function OrdersPage() {
                             <option value="shipped">Shipped</option>
                             <option value="delivered">Delivered</option>
                           </select>
+                        </td>
+
+                        <td>
+                          <div className="font-medium text-sm">
+                            {order.paymentMethod === "Stripe" ? "Card (Stripe)" : order.paymentMethod}
+                          </div>
+                          {order.paymentProof?.receiptUrl && (
+                            <a
+                              href={order.paymentProof.receiptUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary text-xs link link-hover"
+                            >
+                              View Receipt
+                            </a>
+                          )}
+                          {order.paymentProof?.transactionId && (
+                            <div className="text-xs opacity-60">ID: {order.paymentProof.transactionId}</div>
+                          )}
                         </td>
 
                         <td>

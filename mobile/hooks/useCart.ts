@@ -50,13 +50,18 @@ const useCart = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cart"] }),
   });
 
-  const cartTotal =
-    cart?.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) ?? 0;
+  // Filter out items with null products (products that were deleted)
+  const validItems = cart?.items.filter((item) => item.product !== null) ?? [];
 
-  const cartItemCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
+  const cartTotal = validItems.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  );
+
+  const cartItemCount = validItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return {
-    cart,
+    cart: cart ? { ...cart, items: validItems } : cart,
     isLoading,
     isError,
     cartTotal,

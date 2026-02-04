@@ -17,6 +17,8 @@ import productRoutes from "./routes/product.route.js";
 import cartRoutes from "./routes/cart.route.js";
 import paymentRoutes from "./routes/payment.route.js";
 
+import uploadRoutes from "./routes/upload.route.js";
+
 const app = express();
 
 const __dirname = path.resolve();
@@ -47,6 +49,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/upload", uploadRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "Success" });
@@ -54,7 +57,7 @@ app.get("/api/health", (req, res) => {
 
 // Root route for basic server check
 app.get("/", (req, res) => {
-  res.status(200).json({ 
+  res.status(200).json({
     message: "Orderker API is running",
     health: "/api/health",
     docs: "API endpoints are available under /api/*"

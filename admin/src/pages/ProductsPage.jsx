@@ -156,7 +156,7 @@ function ProductsPage() {
                     <div className="flex items-center gap-6 mt-4">
                       <div>
                         <p className="text-xs text-base-content/70">Price</p>
-                        <p className="font-bold text-lg">${product.price}</p>
+                        <p className="font-bold text-lg">₨{product.price}</p>
                       </div>
                       <div>
                         <p className="text-xs text-base-content/70">Stock</p>
@@ -234,10 +234,15 @@ function ProductsPage() {
                   required
                 >
                   <option value="">Select category</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Accessories">Accessories</option>
-                  <option value="Fashion">Fashion</option>
-                  <option value="Sports">Sports</option>
+                  <option value="Sabzi">Sabzi (Vegetables)</option>
+                  <option value="Phal">Phal (Fruits)</option>
+                  <option value="Staples">Staples</option>
+                  <option value="Dairy & Eggs">Dairy & Eggs</option>
+                  <option value="Masalay">Masalay (Spices)</option>
+                  <option value="Snacks">Snacks</option>
+                  <option value="Beverages">Beverages</option>
+                  <option value="Household">Household</option>
+                  <option value="Personal Care">Personal Care</option>
                 </select>
               </div>
             </div>
@@ -245,12 +250,12 @@ function ProductsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="form-control">
                 <label className="label">
-                  <span>Price ($)</span>
+                  <span>Price (₨)</span>
                 </label>
                 <input
                   type="number"
-                  step="0.01"
-                  placeholder="0.00"
+                  step="1"
+                  placeholder="0"
                   className="input input-bordered"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
