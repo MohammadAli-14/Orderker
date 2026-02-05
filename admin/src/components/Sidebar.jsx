@@ -17,7 +17,7 @@ function Sidebar() {
             <div className="size-10 bg-primary rounded-xl flex items-center justify-center shrink-0">
               <ShoppingBagIcon className="w-6 h-6 text-primary-content" />
             </div>
-            <span className="text-xl font-bold is-drawer-close:hidden">Admin</span>
+            <span className="text-xl font-bold is-drawer-close:hidden">Orderker Admin</span>
           </div>
         </div>
 

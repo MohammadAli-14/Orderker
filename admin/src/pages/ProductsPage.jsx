@@ -145,13 +145,13 @@ function ProductsPage() {
                     </div>
                   </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="card-title">{product.name}</h3>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="card-title text-base sm:text-lg truncate">{product.name}</h3>
                         <p className="text-base-content/70 text-sm">{product.category}</p>
                       </div>
-                      <div className={`badge ${status.class}`}>{status.text}</div>
+                      <div className={`badge ${status.class} shrink-0`}>{status.text}</div>
                     </div>
                     <div className="flex items-center gap-6 mt-4">
                       <div>
