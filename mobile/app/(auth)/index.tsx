@@ -1,8 +1,19 @@
 import useSocialAuth from "@/hooks/useSocialAuth";
-import { View, Text, Image, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { useUser, useAuth } from "@clerk/clerk-expo";
+import { useEffect } from "react";
 
 const AuthScreen = () => {
   const { loadingStrategy, handleSocialAuth } = useSocialAuth();
+  const { user, isSignedIn } = useUser();
+  const { signOut } = useAuth();
+
+  useEffect(() => {
+    if (isSignedIn && user?.publicMetadata?.role === "admin") {
+      Alert.alert("Access Denied", "Admins cannot use the mobile app.");
+      signOut();
+    }
+  }, [isSignedIn, user]);
 
   return (
     <View className="px-8 flex-1 justify-center items-center bg-white">
