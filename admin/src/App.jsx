@@ -9,6 +9,9 @@ import DashboardLayout from "./layouts/DashboardLayout";
 
 import PageLoader from "./components/PageLoader";
 
+import LandingPage from "./pages/LandingPage";
+import LegalPage from "./pages/LegalPage";
+
 function App() {
   const { user, isLoaded, isSignedIn } = useUser();
   const { signOut } = useClerk();
@@ -32,10 +35,18 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={isSignedIn ? <Navigate to={"/dashboard"} /> : <LoginPage />} />
+      {/* If signed in & admin, go straight to dashboard. Otherwise show Landing Page */}
+      <Route path="/" element={isSignedIn && user?.publicMetadata?.role === "admin" ? <Navigate to="/dashboard" /> : <LandingPage />} />
+      <Route path="/privacy" element={<LegalPage />} />
+      <Route path="/terms" element={<LegalPage />} />
+      <Route path="/support" element={<LegalPage />} />
+      <Route path="/status" element={<LegalPage />} />
 
-      <Route path="/" element={isSignedIn ? <DashboardLayout /> : <Navigate to={"/login"} />}>
-        <Route index element={<Navigate to={"dashboard"} />} />
+      {/* Route for dedicated login page */}
+      <Route path="/login" element={isSignedIn && user?.publicMetadata?.role === "admin" ? <Navigate to="/dashboard" /> : <LoginPage />} />
+
+      {/* Protected Dashboard Routes */}
+      <Route element={isSignedIn ? <DashboardLayout /> : <Navigate to="/login" />}>
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="orders" element={<OrdersPage />} />
