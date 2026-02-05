@@ -19,6 +19,7 @@ module.exports = {
         surface: {
           DEFAULT: "#282828",
           light: "#3E3E3E",
+          lighter: "#4A4A4A",
         },
         text: {
           primary: "#FFFFFF",

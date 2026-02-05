@@ -1,7 +1,9 @@
 import { useUser } from "@clerk/clerk-react";
-import { ShoppingBagIcon } from "lucide-react";
+
 import { Link, useLocation } from "react-router";
 import { NAVIGATION } from "./Navbar";
+
+import logo from "../assets/logo.png";
 
 function Sidebar() {
   const location = useLocation();
@@ -14,10 +16,8 @@ function Sidebar() {
       <div className="flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64">
         <div className="p-4 w-full">
           <div className="flex items-center gap-3">
-            <div className="size-10 bg-primary rounded-xl flex items-center justify-center shrink-0">
-              <ShoppingBagIcon className="w-6 h-6 text-primary-content" />
-            </div>
-            <span className="text-xl font-bold is-drawer-close:hidden">Orderker Admin</span>
+            <img src={logo} alt="OrderKer Logo" className="h-8 w-auto object-contain" />
+            <span className="text-xl font-bold is-drawer-close:hidden">Admin</span>
           </div>
         </div>
 

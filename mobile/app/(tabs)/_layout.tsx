@@ -10,7 +10,7 @@ const TabsLayout = () => {
   const insets = useSafeAreaInsets();
 
   if (!isLoaded) return null; // for a better ux
-  if (!isSignedIn) return <Redirect href={"/(auth)"} />;
+  if (!isSignedIn) return <Redirect href={"/(auth)/login"} />;
 
   return (
     <Tabs
@@ -33,8 +33,8 @@ const TabsLayout = () => {
             intensity={80}
             tint="dark"
             style={StyleSheet.absoluteFill}
-            // StyleSheet.absoluteFill is equal to this 👇
-            // { position: "absolute", top: 0, right: 0, left: 0, bottom: 0 }
+          // StyleSheet.absoluteFill is equal to this 👇
+          // { position: "absolute", top: 0, right: 0, left: 0, bottom: 0 }
           />
         ),
         tabBarLabelStyle: {
@@ -45,7 +45,7 @@ const TabsLayout = () => {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: "Browse",
           tabBarIcon: ({ color, size }) => <Ionicons name="grid" size={size} color={color} />,

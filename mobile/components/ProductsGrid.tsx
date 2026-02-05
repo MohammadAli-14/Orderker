@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { ProductCardSkeleton } from "./Skeleton";
 
 interface ProductsGridProps {
   isLoading: boolean;
@@ -108,9 +109,10 @@ const ProductsGrid = ({ products, isLoading, isError }: ProductsGridProps) => {
 
   if (isLoading) {
     return (
-      <View className="py-20 items-center justify-center">
-        <ActivityIndicator size="large" color="#00D9FF" />
-        <Text className="text-text-secondary mt-4">Loading products...</Text>
+      <View className="flex-row flex-wrap justify-between">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <ProductCardSkeleton key={i} />
+        ))}
       </View>
     );
   }

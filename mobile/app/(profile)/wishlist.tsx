@@ -6,6 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import GradientButton from "@/components/GradientButton";
+import { WishlistItemSkeleton } from "@/components/Skeleton";
 
 function WishlistScreen() {
   const { wishlist, isLoading, isError, removeFromWishlist, isRemovingFromWishlist } =
@@ -55,20 +57,21 @@ function WishlistScreen() {
 
       {wishlist.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Ionicons name="heart-outline" size={80} color="#666" />
-          <Text className="text-text-primary font-semibold text-xl mt-4">
+          <View className="bg-surface/50 rounded-full p-6 mb-4">
+            <Ionicons name="heart-outline" size={64} color="#1DB954" />
+          </View>
+          <Text className="text-text-primary font-bold text-xl mt-2">
             Your wishlist is empty
           </Text>
-          <Text className="text-text-secondary text-center mt-2">
+          <Text className="text-text-secondary text-center mt-2 mb-6">
             Start adding products you love!
           </Text>
-          <TouchableOpacity
-            className="bg-primary rounded-2xl px-8 py-4 mt-6"
-            activeOpacity={0.8}
-            onPress={() => router.push("/(tabs)")}
-          >
-            <Text className="text-background font-bold text-base">Browse Products</Text>
-          </TouchableOpacity>
+          <GradientButton
+            title="Browse Products"
+            icon="storefront-outline"
+            onPress={() => router.push("/(tabs)/home")}
+            size="md"
+          />
         </View>
       ) : (
         <ScrollView
@@ -158,9 +161,10 @@ function LoadingUI() {
         </TouchableOpacity>
         <Text className="text-text-primary text-2xl font-bold">Wishlist</Text>
       </View>
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color="#00D9FF" />
-        <Text className="text-text-secondary mt-4">Loading wishlist...</Text>
+      <View className="px-6 py-4">
+        {[1, 2, 3, 4].map((i) => (
+          <WishlistItemSkeleton key={i} />
+        ))}
       </View>
     </SafeScreen>
   );

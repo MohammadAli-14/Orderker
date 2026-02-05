@@ -91,14 +91,30 @@ const ShopScreen = () => {
                 <TouchableOpacity
                   key={category.name}
                   onPress={() => setSelectedCategory(category.name)}
-                  className={`mr-3 rounded-2xl px-4 py-3 items-center justify-center ${isSelected ? "bg-primary" : "bg-surface"}`}
+                  className={`mr-3 rounded-2xl px-5 py-4 items-center justify-center ${isSelected ? "bg-primary" : "bg-surface"
+                    }`}
+                  style={
+                    isSelected
+                      ? {
+                        shadowColor: "#1DB954",
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 8,
+                        elevation: 6,
+                      }
+                      : undefined
+                  }
+                  activeOpacity={0.8}
                 >
                   <Ionicons
                     name={category.icon}
-                    size={24}
+                    size={22}
                     color={isSelected ? "#121212" : "#fff"}
                   />
-                  <Text className={`text-xs mt-1 font-medium ${isSelected ? "text-background" : "text-text-primary"}`}>
+                  <Text
+                    className={`text-xs mt-1.5 font-semibold ${isSelected ? "text-background" : "text-text-primary"
+                      }`}
+                  >
                     {category.name}
                   </Text>
                 </TouchableOpacity>

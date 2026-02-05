@@ -11,6 +11,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import OrderSummary from "@/components/OrderSummary";
 import AddressSelectionModal from "@/components/AddressSelectionModal";
+import GradientButton from "@/components/GradientButton";
+import { CartItemSkeleton } from "@/components/Skeleton";
 
 import * as Sentry from "@sentry/react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -372,7 +374,7 @@ const CartScreen = () => {
               <Text className="text-text-secondary mb-2">Transaction Details</Text>
 
               <Text className="text-text-secondary text-sm mb-2 opacity-70">
-                Please send amount to 0300-1234567 and upload proof.
+                Please send amount to 03012316979 (Sami Khan) and upload proof.
               </Text>
 
               <TextInput
@@ -425,23 +427,13 @@ const CartScreen = () => {
         </View>
 
         {/* Checkout Button */}
-        <TouchableOpacity
-          className="bg-primary rounded-2xl overflow-hidden"
-          activeOpacity={0.9}
+        <GradientButton
+          title="Checkout"
+          icon="arrow-forward"
+          isLoading={paymentLoading}
           onPress={handleCheckout}
           disabled={paymentLoading}
-        >
-          <View className="py-5 flex-row items-center justify-center">
-            {paymentLoading ? (
-              <ActivityIndicator size="small" color="#121212" />
-            ) : (
-              <>
-                <Text className="text-background font-bold text-lg mr-2">Checkout</Text>
-                <Ionicons name="arrow-forward" size={20} color="#121212" />
-              </>
-            )}
-          </View>
-        </TouchableOpacity>
+        />
       </View>
 
       <AddressSelectionModal
@@ -458,10 +450,14 @@ export default CartScreen;
 
 function LoadingUI() {
   return (
-    <View className="flex-1 bg-background items-center justify-center">
-      <ActivityIndicator size="large" color="#00D9FF" />
-      <Text className="text-text-secondary mt-4">Loading cart...</Text>
-    </View>
+    <SafeScreen>
+      <Text className="px-6 pb-5 text-text-primary text-3xl font-bold tracking-tight">Cart</Text>
+      <View className="px-6">
+        {[1, 2, 3].map((i) => (
+          <CartItemSkeleton key={i} />
+        ))}
+      </View>
+    </SafeScreen>
   );
 }
 
