@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Orderker",
+    "slug": "orderker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.mobile"
+      "bundleIdentifier": "com.orderker.mobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +21,10 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.mobile"
+      "package": "com.orderker.mobile",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -50,15 +53,31 @@
       [
         "@sentry/react-native/expo",
         {
-          "url": "https://sentry.io/",
-          "project": "ecommerce-tut",
-          "organization": "codesistency-gs"
+          "organization": "orderker",
+          "project": "javascript-react",
+          "url": "https://sentry.io/"
         }
-      ]
+      ],
+      "@sentry/react-native",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.orderker.mobile",
+          "enableGooglePay": true
+        }
+      ],
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "24d77201-c823-44ea-bbb5-2924d073d616"
+      }
     }
   }
 }

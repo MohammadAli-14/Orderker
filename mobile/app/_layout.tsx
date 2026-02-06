@@ -55,11 +55,20 @@ const queryClient = new QueryClient({
   }),
 });
 
+const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+const stripePublishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!;
+
+if (!clerkPublishableKey) {
+  throw new Error(
+    "Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY. Please set it in your environment."
+  );
+}
+
 export default Sentry.wrap(function RootLayout() {
   return (
-    <ClerkProvider tokenCache={tokenCache}>
+    <ClerkProvider publishableKey={clerkPublishableKey} tokenCache={tokenCache}>
       <QueryClientProvider client={queryClient}>
-        <StripeProvider publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}>
+        <StripeProvider publishableKey={stripePublishableKey}>
           <Stack screenOptions={{ headerShown: false }} />
         </StripeProvider>
       </QueryClientProvider>

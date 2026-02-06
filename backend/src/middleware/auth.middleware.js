@@ -27,9 +27,9 @@ export const adminOnly = (req, res, next) => {
     return res.status(401).json({ message: "Unauthorized - user not found" });
   }
 
-  if (req.user.role !== "admin") {
-    return res.status(403).json({ message: "Forbidden - admin access only" });
+  if (req.user.role === "admin" || ENV.ADMIN_EMAILS.includes(req.user.email)) {
+    return next();
   }
 
-  next();
+  return res.status(403).json({ message: "Forbidden - admin access only" });
 };

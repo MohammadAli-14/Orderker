@@ -16,8 +16,10 @@ function Sidebar() {
       <div className="flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64">
         <div className="p-4 w-full">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="OrderKer Logo" className="h-8 w-auto object-contain" />
-            <span className="text-xl font-bold is-drawer-close:hidden">Admin</span>
+            <img src={logo} alt="OrderKer Logo" className="h-8 w-8 object-contain" />
+            <span className="text-xl font-bold tracking-tight text-base-content is-drawer-close:hidden">
+              Orderker<span className="text-primary">.</span>
+            </span>
           </div>
         </div>
 

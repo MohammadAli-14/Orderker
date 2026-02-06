@@ -20,11 +20,21 @@ export default function Hero() {
                 </div>
 
                 <h1 className="max-w-4xl mx-auto mb-6 text-5xl font-extrabold tracking-tight md:text-7xl text-base-content">
-                    Powering smarter <br />
-                    <span className="text-primary">grocery operations.</span>
+                    <span className="inline-block opacity-0 animate-[fadeInUp_0.6s_ease-out_0.2s_forwards]">
+                        Powering smarter
+                    </span>{" "}
+                    <br />
+                    <span className="text-primary">
+                        <span className="inline-block opacity-0 animate-[fadeInUp_0.6s_ease-out_0.5s_forwards]">
+                            grocery
+                        </span>{" "}
+                        <span className="inline-block opacity-0 animate-[fadeInUp_0.6s_ease-out_0.65s_forwards]">
+                            operations.
+                        </span>
+                    </span>
                 </h1>
 
-                <p className="max-w-2xl mx-auto mb-10 text-lg text-base-content/60 md:text-xl">
+                <p className="max-w-2xl mx-auto mb-10 text-lg text-base-content/60 md:text-xl opacity-0 animate-[fadeIn_0.6s_ease-out_0.9s_forwards]">
                     Complete control over inventory, vendor monitoring, and delivery zones across Karachi.
                     Built for high-volume daily essentials.
                 </p>
@@ -32,14 +42,14 @@ export default function Hero() {
                 <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                     <button
                         onClick={() => navigate("/login")}
-                        className="btn btn-primary btn-lg shadow-lg shadow-primary/30 hover:shadow-primary/50 border-none text-primary-content"
+                        className="btn btn-primary btn-lg shadow-lg shadow-primary/30 hover:shadow-primary/50 border-none text-primary-content opacity-0 animate-[fadeInScale_0.5s_ease-out_1.1s_forwards] hover:scale-105 transition-transform"
                     >
                         Access Dashboard
                         <ArrowRight className="w-5 h-5 ml-2" />
                     </button>
                     <button
                         onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                        className="btn btn-outline btn-lg text-base-content hover:bg-base-content hover:text-base-100"
+                        className="btn btn-outline btn-lg text-base-content hover:bg-base-content hover:text-base-100 opacity-0 animate-[fadeInScale_0.5s_ease-out_1.3s_forwards]"
                     >
                         Learn More
                     </button>

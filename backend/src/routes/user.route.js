@@ -7,6 +7,7 @@ import {
   getWishlist,
   removeFromWishlist,
   updateAddress,
+  syncUserRole,
 } from "../controllers/user.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
@@ -24,5 +25,8 @@ router.delete("/addresses/:addressId", deleteAddress);
 router.post("/wishlist", addToWishlist);
 router.delete("/wishlist/:productId", removeFromWishlist);
 router.get("/wishlist", getWishlist);
+
+router.get("/wishlist", getWishlist);
+router.post("/sync-role", syncUserRole);
 
 export default router;

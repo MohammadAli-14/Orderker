@@ -153,3 +153,34 @@ export async function getWishlist(req, res) {
     res.status(500).json({ error: "Internal server error" });
   }
 }
+
+export async function syncUserRole(req, res) {
+  try {
+    const user = req.user;
+    const { ADMIN_EMAILS } = await import("../config/env.js").then((m) => m.ENV);
+    const { clerkClient } = await import("../config/inngest.js");
+
+    if (ADMIN_EMAILS.includes(user.email) && user.role !== "admin") {
+      // 1. Update MongoDB
+      user.role = "admin";
+      await user.save();
+
+      // 2. Update Clerk Metadata
+      try {
+        await clerkClient.users.updateUser(user.clerkId, {
+          publicMetadata: { role: "admin" },
+        });
+      } catch (clerkError) {
+        console.error("Failed to update Clerk metadata:", clerkError);
+        // Continue even if Clerk fails, DB update might be enough for backend
+      }
+
+      return res.status(200).json({ message: "Role synced to admin", role: "admin" });
+    }
+
+    res.status(200).json({ message: "No role change needed", role: user.role });
+  } catch (error) {
+    console.error("Error in syncUserRole:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}

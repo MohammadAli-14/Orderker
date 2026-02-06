@@ -7,7 +7,7 @@ export const inngest = new Inngest({ id: "ecommerce-app" });
 
 import { createClerkClient } from "@clerk/backend";
 
-const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+export const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 const syncUser = inngest.createFunction(
   { id: "sync-user" },

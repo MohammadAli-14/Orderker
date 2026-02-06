@@ -12,7 +12,9 @@ export const ENV = {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
-  ADMIN_EMAILS: process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(",") : [],
+  ADMIN_EMAILS: process.env.ADMIN_EMAILS
+    ? process.env.ADMIN_EMAILS.split(",").map((email) => email.trim())
+    : [],
   CLIENT_URL: process.env.CLIENT_URL,
   STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
