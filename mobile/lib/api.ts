@@ -2,15 +2,12 @@ import { useAuth } from "@clerk/clerk-expo";
 import axios from "axios";
 import { useEffect } from "react";
 
-// Use your deployed backend URL for physical device testing
-// Switch to localhost:3000 only when testing on simulator with local backend
-const API_URL = "https://orderker.onrender.com/api";
-
-// For local development with simulator:
-// const API_URL = "http://localhost:3000/api";
+// For local development with physical device (change to your laptop's IP):
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.18.89:3000/api";
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`,
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },

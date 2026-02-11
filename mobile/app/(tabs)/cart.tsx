@@ -3,7 +3,7 @@ import { useAddresses } from "@/hooks/useAddressess";
 import useCart from "@/hooks/useCart";
 import { useApi } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
-import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View, TextInput, Platform, Image as RNImage } from "react-native";
 import { useStripe } from "@stripe/stripe-react-native";
 import { useState } from "react";
 import { Address } from "@/types";
@@ -11,13 +11,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import OrderSummary from "@/components/OrderSummary";
 import AddressSelectionModal from "@/components/AddressSelectionModal";
-import GradientButton from "@/components/GradientButton";
+import { PrimaryButton } from "@/components/PrimaryButton"; // Updated import
 import { CartItemSkeleton } from "@/components/Skeleton";
 
 import * as Sentry from "@sentry/react-native";
 import * as ImagePicker from "expo-image-picker";
-import { Platform, TextInput } from "react-native";
 import axios from "axios";
+import { router } from "expo-router";
 
 type PaymentMethod = "Stripe" | "COD" | "Easypaisa" | "JazzCash";
 
@@ -43,49 +43,11 @@ const CartScreen = () => {
   const [addressModalVisible, setAddressModalVisible] = useState(false);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Stripe");
-  const [transactionId, setTransactionId] = useState("");
-  const [receiptImage, setReceiptImage] = useState<string | null>(null);
-
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.5,
-    });
-
-    if (!result.canceled) {
-      setReceiptImage(result.assets[0].uri);
-    }
-  };
-
-  const uploadReceipt = async (uri: string): Promise<string> => {
-    const formData = new FormData();
-
-    // Normalize URI for Android/iOS
-    const localUri = Platform.OS === "android" ? uri : uri.replace("file://", "");
-    const filename = uri.split("/").pop() || "receipt.jpg";
-    const match = /\.(\w+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : `image`;
-
-    // @ts-ignore
-    formData.append("image", {
-      uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
-      name: filename,
-      type: type,
-    });
-
-    const { data } = await api.post("/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return data.imageUrl;
-  };
 
   const cartItems = cart?.items || [];
   const subtotal = cartTotal;
-  const shipping = 150; // Rs. 150 shipping fee for Karachi
-  const tax = subtotal * 0.05; // 5% GST
+  const shipping = 150;
+  const tax = subtotal * 0.05;
   const total = subtotal + shipping + tax;
 
   const handleQuantityChange = (productId: string, currentQuantity: number, change: number) => {
@@ -105,10 +67,19 @@ const CartScreen = () => {
     ]);
   };
 
+  const handleClearCart = () => {
+    Alert.alert("Clear Cart", "Are you sure you want to remove all items from your cart?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Clear All",
+        style: "destructive",
+        onPress: () => clearCart(),
+      },
+    ]);
+  };
+
   const handleCheckout = () => {
     if (cartItems.length === 0) return;
-
-    // check if user has addresses
     if (!addresses || addresses.length === 0) {
       Alert.alert(
         "No Address",
@@ -117,27 +88,29 @@ const CartScreen = () => {
       );
       return;
     }
-
-    // show address selection modal
     setAddressModalVisible(true);
   };
 
   const handleProceedWithPayment = async (selectedAddress: Address) => {
     setAddressModalVisible(false);
 
-    // Validate Manual Payment
     if (["Easypaisa", "JazzCash"].includes(paymentMethod)) {
-      if (!transactionId) {
-        Alert.alert("Error", "Please enter the Transaction ID");
-        return;
-      }
-      if (!receiptImage) {
-        Alert.alert("Error", "Please upload the payment receipt");
-        return;
-      }
+      router.push({
+        pathname: "/payment/verification",
+        params: {
+          amount: total.toString(),
+          method: paymentMethod,
+          fullName: selectedAddress.fullName,
+          streetAddress: selectedAddress.streetAddress,
+          city: selectedAddress.city,
+          state: selectedAddress.state,
+          zipCode: selectedAddress.zipCode,
+          phoneNumber: selectedAddress.phoneNumber,
+        }
+      });
+      return;
     }
 
-    // log chechkout initiated
     Sentry.logger.info("Checkout initiated", {
       itemCount: cartItemCount,
       total: total.toFixed(2),
@@ -149,7 +122,6 @@ const CartScreen = () => {
       setPaymentLoading(true);
 
       if (paymentMethod === "Stripe") {
-        // create payment intent with cart items and shipping address
         const { data } = await api.post("/payment/create-intent", {
           cartItems,
           shippingAddress: {
@@ -173,34 +145,22 @@ const CartScreen = () => {
           return;
         }
 
-        // present payment sheet
         const { error: presentError } = await presentPaymentSheet();
 
         if (presentError) {
           Alert.alert("Payment cancelled", presentError.message);
-          return; // Stop execution
+          return;
         }
 
-        // Success handled by webhook mostly, but we clear cart here
         Alert.alert("Success", "Your payment was successful!", [{ text: "OK" }]);
         clearCart();
         return;
       }
 
-      // Handle COD and Manual Payments
-      let paymentProof = null;
-      if (["Easypaisa", "JazzCash"].includes(paymentMethod) && receiptImage) {
-        const imageUrl = await uploadReceipt(receiptImage);
-        paymentProof = {
-          transactionId,
-          receiptUrl: imageUrl,
-        };
-      }
-
-      // Create Order Directly
+      // Handle COD
       await api.post("/orders", {
         orderItems: cartItems.map((item) => ({
-          product: item.product._id, // backend expects product ID string
+          product: item.product._id,
           name: item.product.name,
           quantity: item.quantity,
           price: item.product.price,
@@ -215,7 +175,6 @@ const CartScreen = () => {
           phoneNumber: selectedAddress.phoneNumber,
         },
         paymentMethod,
-        paymentProof,
         totalPrice: total,
       });
 
@@ -223,8 +182,6 @@ const CartScreen = () => {
         { text: "OK", onPress: () => { } },
       ]);
       clearCart();
-      setTransactionId("");
-      setReceiptImage(null);
 
     } catch (error) {
       Sentry.logger.error("Order failed", {
@@ -252,86 +209,92 @@ const CartScreen = () => {
 
   return (
     <SafeScreen>
-      <Text className="px-6 pb-5 text-text-primary text-3xl font-bold tracking-tight">Cart</Text>
+      {/* Header */}
+      <View className="px-6 py-4 flex-row items-center justify-center relative">
+        <TouchableOpacity
+          style={{ position: 'absolute', left: 24, zIndex: 10 }}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#1F2937" />
+        </TouchableOpacity>
+        <Text className="text-xl font-bold text-text-primary">Shopping Cart</Text>
+        <TouchableOpacity
+          style={{ position: 'absolute', right: 24 }}
+          onPress={handleClearCart}
+        >
+          <Ionicons name="trash-outline" size={24} color="#EF4444" />
+        </TouchableOpacity>
+      </View>
 
       <ScrollView
-        className="flex-1"
+        className="flex-1 bg-white"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 240 }}
       >
-        <View className="px-6 gap-2">
-          {cartItems.map((item, index) => (
-            <View key={item._id} className="bg-surface rounded-3xl overflow-hidden ">
-              <View className="p-4 flex-row">
-                {/* product image */}
-                <View className="relative">
-                  <Image
-                    source={item.product.images[0]}
-                    className="bg-background-lighter"
-                    contentFit="cover"
-                    style={{ width: 112, height: 112, borderRadius: 16 }}
-                  />
-                  <View className="absolute top-2 right-2 bg-primary rounded-full px-2 py-0.5">
-                    <Text className="text-background text-xs font-bold">×{item.quantity}</Text>
-                  </View>
+        <View className="px-6 gap-4 mt-4">
+          {cartItems.map((item) => (
+            <View key={item._id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex-row">
+              {/* Image */}
+              <View className="bg-surface rounded-xl p-2 items-center justify-center h-20 w-20">
+                <Image
+                  source={item.product.images[0]}
+                  style={{ width: 60, height: 60 }}
+                  contentFit="contain"
+                />
+              </View>
+
+              {/* Details */}
+              <View className="flex-1 ml-4 justify-between">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-text-primary font-bold text-base flex-1" numberOfLines={1}>
+                    {item.product.name}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => handleRemoveItem(item.product._id, item.product.name)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#9CA3AF" />
+                  </TouchableOpacity>
                 </View>
+                <Text className="text-text-secondary text-xs mt-1">
+                  1 unit {/* Placeholder unit */}
+                </Text>
 
-                <View className="flex-1 ml-4 justify-between">
-                  <View>
-                    <Text
-                      className="text-text-primary font-bold text-lg leading-tight"
-                      numberOfLines={2}
-                    >
-                      {item.product.name}
-                    </Text>
-                    <View className="flex-row items-center mt-2">
-                      <Text className="text-primary font-bold text-2xl">
-                        {formatCurrency(item.product.price * item.quantity)}
-                      </Text>
-                      <Text className="text-text-secondary text-sm ml-2">
-                        {formatCurrency(item.product.price)} each
-                      </Text>
-                    </View>
-                  </View>
+                <View className="flex-row items-center justify-between mt-2">
+                  <Text className="text-primary font-bold text-lg">
+                    Rs. {item.product.price * item.quantity}
+                  </Text>
 
-                  <View className="flex-row items-center mt-3">
+                  {/* Quantity Control */}
+                  <View className="flex-row items-center bg-surface rounded-lg">
                     <TouchableOpacity
-                      className="bg-background-lighter rounded-full w-9 h-9 items-center justify-center"
-                      activeOpacity={0.7}
                       onPress={() => handleQuantityChange(item.product._id, item.quantity, -1)}
-                      disabled={isUpdating}
+                      className="p-2 w-10 h-10 items-center justify-center"
+                      disabled={isUpdating || item.quantity <= 1}
                     >
                       {isUpdating ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
+                        <ActivityIndicator size="small" color="#5E2D87" />
                       ) : (
-                        <Ionicons name="remove" size={18} color="#FFFFFF" />
+                        <Ionicons
+                          name="remove"
+                          size={16}
+                          color={item.quantity <= 1 ? "#D1D5DB" : "#1F2937"}
+                        />
                       )}
                     </TouchableOpacity>
 
-                    <View className="mx-4 min-w-[32px] items-center">
-                      <Text className="text-text-primary font-bold text-lg">{item.quantity}</Text>
-                    </View>
+                    <Text className="text-text-primary font-semibold mx-2">{item.quantity}</Text>
 
                     <TouchableOpacity
-                      className="bg-primary rounded-full w-9 h-9 items-center justify-center"
-                      activeOpacity={0.7}
                       onPress={() => handleQuantityChange(item.product._id, item.quantity, 1)}
+                      className="p-2 w-10 h-10 items-center justify-center"
                       disabled={isUpdating}
                     >
                       {isUpdating ? (
-                        <ActivityIndicator size="small" color="#121212" />
+                        <ActivityIndicator size="small" color="#5E2D87" />
                       ) : (
-                        <Ionicons name="add" size={18} color="#121212" />
+                        <Ionicons name="add" size={16} color="#1F2937" />
                       )}
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      className="ml-auto bg-red-500/10 rounded-full w-9 h-9 items-center justify-center"
-                      activeOpacity={0.7}
-                      onPress={() => handleRemoveItem(item.product._id, item.product.name)}
-                      disabled={isRemoving}
-                    >
-                      <Ionicons name="trash-outline" size={18} color="#EF4444" />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -340,98 +303,56 @@ const CartScreen = () => {
           ))}
         </View>
 
-        {/* Payment Selection */}
-        <View className="px-6 mt-6">
-          <Text className="text-text-primary text-xl font-bold mb-4">Payment Method</Text>
-          <View className="gap-3">
+        {/* Payment Method */}
+        <View className="px-6 mt-8">
+          <Text className="text-text-primary text-lg font-bold mb-4">Payment Method</Text>
+          <View className="flex-row flex-wrap justify-between">
             {(["Stripe", "COD", "Easypaisa", "JazzCash"] as PaymentMethod[]).map((method) => (
               <TouchableOpacity
                 key={method}
-                className={`p-4 rounded-2xl border ${paymentMethod === method
-                  ? "bg-primary/10 border-primary"
-                  : "bg-surface border-transparent"
+                className={`w-[48%] p-4 rounded-2xl border mb-4 items-center justify-center ${paymentMethod === method
+                  ? "bg-white border-primary"
+                  : "bg-white border-gray-200"
                   }`}
                 onPress={() => setPaymentMethod(method)}
               >
-                <View className="flex-row items-center justify-between">
-                  <Text
-                    className={`font-semibold text-lg ${paymentMethod === method ? "text-primary" : "text-text-primary"
-                      }`}
-                  >
-                    {method === "Stripe" ? "Credit/Debit Card" : method}
-                  </Text>
-                  {paymentMethod === method && (
-                    <Ionicons name="checkmark-circle" size={24} color="#1DB954" />
-                  )}
-                </View>
+                <Ionicons
+                  name={method === "Stripe" ? "card-outline" : "cash-outline"}
+                  size={24}
+                  color={paymentMethod === method ? "#5E2D87" : "#6B7280"}
+                />
+                <Text className={`mt-2 font-medium ${paymentMethod === method ? "text-primary" : "text-text-secondary"}`}>
+                  {method === "Stripe" ? "Card" : method}
+                </Text>
+                {paymentMethod === method && (
+                  <View className="absolute top-2 right-2">
+                    <Ionicons name="checkmark-circle" size={16} color="#5E2D87" />
+                  </View>
+                )}
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* Manual Payment Inputs */}
-          {["Easypaisa", "JazzCash"].includes(paymentMethod) && (
-            <View className="mt-4 p-4 bg-surface rounded-2xl">
-              <Text className="text-text-secondary mb-2">Transaction Details</Text>
+          {/* Manual Payment Inputs Removed - Redirecting to Verification Screen instead */}
 
-              <Text className="text-text-secondary text-sm mb-2 opacity-70">
-                Please send amount to 03012316979 (Sami Khan) and upload proof.
-              </Text>
-
-              <TextInput
-                className="bg-background p-4 rounded-xl text-text-primary mb-3"
-                placeholder="Enter Transaction ID"
-                placeholderTextColor="#666"
-                value={transactionId}
-                onChangeText={setTransactionId}
-              />
-
-              <TouchableOpacity
-                className="bg-background p-4 rounded-xl flex-row items-center justify-center border border-dashed border-gray-600"
-                onPress={pickImage}
-              >
-                {receiptImage ? (
-                  <Image
-                    source={{ uri: receiptImage }}
-                    style={{ width: "100%", height: 150, borderRadius: 8 }}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <>
-                    <Ionicons name="cloud-upload-outline" size={24} color="#666" />
-                    <Text className="text-text-secondary ml-2">Upload Receipt</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
 
         <OrderSummary subtotal={subtotal} shipping={shipping} tax={tax} total={total} />
       </ScrollView>
 
+      {/* Footer */}
       <View
-        className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t
-       border-surface pt-4 pb-32 px-6"
+        className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 pt-4 pb-8 px-6 rounded-t-3xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
-        {/* Quick Stats */}
-        <View className="flex-row items-center justify-between mb-4">
-          <View className="flex-row items-center">
-            <Ionicons name="cart" size={20} color="#1DB954" />
-            <Text className="text-text-secondary ml-2">
-              {cartItemCount} {cartItemCount === 1 ? "item" : "items"}
-            </Text>
-          </View>
-          <View className="flex-row items-center">
-            <Text className="text-text-primary font-bold text-xl">{formatCurrency(total)}</Text>
-          </View>
+        <View className="flex-row items-center justify-between mb-6">
+          <Text className="text-text-secondary text-base">Total</Text>
+          <Text className="text-text-primary font-bold text-2xl">Rs. {total.toLocaleString()}</Text>
         </View>
 
-        {/* Checkout Button */}
-        <GradientButton
-          title="Checkout"
-          icon="arrow-forward"
-          isLoading={paymentLoading}
+        <PrimaryButton
+          title={`Checkout - Rs. ${total.toLocaleString()}`}
           onPress={handleCheckout}
+          loading={paymentLoading}
           disabled={paymentLoading}
         />
       </View>
@@ -448,14 +369,12 @@ const CartScreen = () => {
 
 export default CartScreen;
 
+// Keep existing LoadingUI, ErrorUI, EmptyUI but update their styling if needed to match white theme
 function LoadingUI() {
   return (
     <SafeScreen>
-      <Text className="px-6 pb-5 text-text-primary text-3xl font-bold tracking-tight">Cart</Text>
-      <View className="px-6">
-        {[1, 2, 3].map((i) => (
-          <CartItemSkeleton key={i} />
-        ))}
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color="#5E2D87" />
       </View>
     </SafeScreen>
   );
@@ -463,29 +382,25 @@ function LoadingUI() {
 
 function ErrorUI() {
   return (
-    <View className="flex-1 bg-background items-center justify-center px-6">
-      <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
+    <View className="flex-1 bg-white items-center justify-center px-6">
+      <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
       <Text className="text-text-primary font-semibold text-xl mt-4">Failed to load cart</Text>
-      <Text className="text-text-secondary text-center mt-2">
-        Please check your connection and try again
-      </Text>
     </View>
   );
 }
 
 function EmptyUI() {
   return (
-    <View className="flex-1 bg-background">
-      <View className="px-6 pt-16 pb-5">
-        <Text className="text-text-primary text-3xl font-bold tracking-tight">Cart</Text>
+    <View className="flex-1 bg-white items-center justify-center px-6">
+      <View className="w-24 h-24 bg-surface rounded-full items-center justify-center mb-6">
+        <Ionicons name="cart-outline" size={40} color="#9CA3AF" />
       </View>
-      <View className="flex-1 items-center justify-center px-6">
-        <Ionicons name="cart-outline" size={80} color="#666" />
-        <Text className="text-text-primary font-semibold text-xl mt-4">Your cart is empty</Text>
-        <Text className="text-text-secondary text-center mt-2">
-          Add some products to get started
-        </Text>
-      </View>
+      <Text className="text-text-primary font-bold text-xl">Your cart is empty</Text>
+      <Text className="text-text-secondary text-center mt-2 mb-8">
+        Add some products to get started
+      </Text>
+
+      {/* We can add a "Start Shopping" button here later */}
     </View>
   );
 }

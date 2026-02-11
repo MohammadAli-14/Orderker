@@ -55,6 +55,21 @@ const queryClient = new QueryClient({
   }),
 });
 
+import {
+  useFonts,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from "@expo-google-fonts/plus-jakarta-sans";
+import { useEffect } from "react";
+import * as SplashScreen from "expo-splash-screen";
+import { View } from "react-native";
+
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
+
 const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 const stripePublishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!;
 
@@ -64,12 +79,36 @@ if (!clerkPublishableKey) {
   );
 }
 
+import ConfigGuardian from "@/components/ConfigGuardian";
+
 export default Sentry.wrap(function RootLayout() {
+  const [loaded, error] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, error]);
+
+  if (!loaded && !error) {
+    return null;
+  }
+
   return (
     <ClerkProvider publishableKey={clerkPublishableKey} tokenCache={tokenCache}>
       <QueryClientProvider client={queryClient}>
         <StripeProvider publishableKey={stripePublishableKey}>
-          <Stack screenOptions={{ headerShown: false }} />
+          <ConfigGuardian>
+            <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FFFFFF" } }} />
+            </View>
+          </ConfigGuardian>
         </StripeProvider>
       </QueryClientProvider>
     </ClerkProvider>

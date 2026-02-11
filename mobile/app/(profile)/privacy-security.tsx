@@ -7,11 +7,14 @@ function PrivacyAndSecurityScreen() {
   return (
     <SafeScreen>
       {/* HEADER */}
-      <View className="px-6 pb-5 border-b border-surface flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
-          <Ionicons name="arrow-back" size={28} color="#fff" />
+      <View className="px-6 py-4 flex-row items-center border-b border-gray-100 bg-white">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 items-center justify-center -ml-2 mr-2"
+        >
+          <Ionicons name="arrow-back" size={24} color="#1F2937" />
         </TouchableOpacity>
-        <Text className="text-text-primary text-2xl font-bold">Privacy & Security</Text>
+        <Text className="text-xl font-bold text-text-primary">Privacy & Security</Text>
       </View>
 
       <ScrollView
@@ -27,14 +30,14 @@ function PrivacyAndSecurityScreen() {
           <View className="flex-row flex-wrap justify-between mb-4">
             <View className="bg-surface rounded-2xl p-4 items-center" style={{ width: "48%" }}>
               <View className="bg-primary/20 rounded-full w-12 h-12 items-center justify-center mb-2">
-                <Ionicons name="lock-closed" size={24} color="#1DB954" />
+                <Ionicons name="lock-closed" size={24} color="#5E2D87" />
               </View>
               <Text className="text-text-primary font-bold text-sm text-center">256-bit AES</Text>
               <Text className="text-text-secondary text-xs text-center">Encryption</Text>
             </View>
             <View className="bg-surface rounded-2xl p-4 items-center" style={{ width: "48%" }}>
               <View className="bg-primary/20 rounded-full w-12 h-12 items-center justify-center mb-2">
-                <Ionicons name="shield-checkmark" size={24} color="#1DB954" />
+                <Ionicons name="shield-checkmark" size={24} color="#5E2D87" />
               </View>
               <Text className="text-text-primary font-bold text-sm text-center">GDPR</Text>
               <Text className="text-text-secondary text-xs text-center">Compliant</Text>
@@ -44,14 +47,14 @@ function PrivacyAndSecurityScreen() {
           <View className="flex-row flex-wrap justify-between mb-4">
             <View className="bg-surface rounded-2xl p-4 items-center" style={{ width: "48%" }}>
               <View className="bg-primary/20 rounded-full w-12 h-12 items-center justify-center mb-2">
-                <Ionicons name="eye-off" size={24} color="#1DB954" />
+                <Ionicons name="eye-off" size={24} color="#5E2D87" />
               </View>
               <Text className="text-text-primary font-bold text-sm text-center">No Tracking</Text>
               <Text className="text-text-secondary text-xs text-center">Third-Party Free</Text>
             </View>
             <View className="bg-surface rounded-2xl p-4 items-center" style={{ width: "48%" }}>
               <View className="bg-primary/20 rounded-full w-12 h-12 items-center justify-center mb-2">
-                <Ionicons name="close-circle" size={24} color="#1DB954" />
+                <Ionicons name="close-circle" size={24} color="#5E2D87" />
               </View>
               <Text className="text-text-primary font-bold text-sm text-center">Never Sold</Text>
               <Text className="text-text-secondary text-xs text-center">Your Data is Yours</Text>
@@ -61,7 +64,7 @@ function PrivacyAndSecurityScreen() {
           {/* Detailed Privacy Message */}
           <View className="bg-surface rounded-2xl p-5 mb-4">
             <View className="flex-row items-center mb-3">
-              <Ionicons name="heart" size={20} color="#1DB954" />
+              <Ionicons name="heart" size={20} color="#5E2D87" />
               <Text className="text-text-primary font-bold text-base ml-2">Our Commitment to You</Text>
             </View>
             <Text className="text-text-secondary text-sm leading-5 mb-3">
@@ -69,25 +72,25 @@ function PrivacyAndSecurityScreen() {
             </Text>
             <View className="space-y-2">
               <View className="flex-row items-start">
-                <Ionicons name="checkmark-circle" size={16} color="#1DB954" style={{ marginTop: 2 }} />
+                <Ionicons name="checkmark-circle" size={16} color="#5E2D87" style={{ marginTop: 2 }} />
                 <Text className="text-text-secondary text-sm ml-2 flex-1">
                   Your personal information is encrypted and stored on secure servers
                 </Text>
               </View>
               <View className="flex-row items-start mt-2">
-                <Ionicons name="checkmark-circle" size={16} color="#1DB954" style={{ marginTop: 2 }} />
+                <Ionicons name="checkmark-circle" size={16} color="#5D3EBC" style={{ marginTop: 2 }} />
                 <Text className="text-text-secondary text-sm ml-2 flex-1">
                   We never sell, rent, or share your data with third parties for advertising
                 </Text>
               </View>
               <View className="flex-row items-start mt-2">
-                <Ionicons name="checkmark-circle" size={16} color="#1DB954" style={{ marginTop: 2 }} />
+                <Ionicons name="checkmark-circle" size={16} color="#5D3EBC" style={{ marginTop: 2 }} />
                 <Text className="text-text-secondary text-sm ml-2 flex-1">
                   You can download or delete your data anytime from your profile
                 </Text>
               </View>
               <View className="flex-row items-start mt-2">
-                <Ionicons name="checkmark-circle" size={16} color="#1DB954" style={{ marginTop: 2 }} />
+                <Ionicons name="checkmark-circle" size={16} color="#5D3EBC" style={{ marginTop: 2 }} />
                 <Text className="text-text-secondary text-sm ml-2 flex-1">
                   Payment info is processed by Stripe - we never store your card details
                 </Text>
@@ -98,7 +101,7 @@ function PrivacyAndSecurityScreen() {
           {/* Contact for Privacy */}
           <View className="bg-primary/10 rounded-2xl p-4 flex-row items-center mb-6">
             <View className="bg-primary/20 rounded-full w-10 h-10 items-center justify-center mr-3">
-              <Ionicons name="mail" size={20} color="#1DB954" />
+              <Ionicons name="mail" size={20} color="#5E2D87" />
             </View>
             <View className="flex-1">
               <Text className="text-text-primary font-semibold text-sm">Questions about your privacy?</Text>
@@ -106,8 +109,8 @@ function PrivacyAndSecurityScreen() {
             </View>
           </View>
         </View>
-      </ScrollView>
-    </SafeScreen>
+      </ScrollView >
+    </SafeScreen >
   );
 }
 

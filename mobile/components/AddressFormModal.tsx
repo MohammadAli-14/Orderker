@@ -53,13 +53,19 @@ const AddressFormModal = ({
       >
         <SafeScreen>
           {/* HEADER */}
-          <View className="px-6 py-5 border-b border-surface flex-row items-center justify-between">
-            <Text className="text-text-primary text-2xl font-bold">
+          <View className="px-6 py-4 flex-row items-center border-b border-gray-100 bg-white">
+            <TouchableOpacity
+              onPress={onClose}
+              className="w-10 h-10 items-center justify-center -ml-2 mr-2"
+              activeOpacity={0.7}
+              accessibilityLabel="Back"
+              accessibilityRole="button"
+            >
+              <Ionicons name="arrow-back" size={24} color="#1F2937" />
+            </TouchableOpacity>
+            <Text className="text-xl font-bold text-text-primary">
               {isEditing ? "Edit Address" : "Add New Address"}
             </Text>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={28} color="#FFFFFF" />
-            </TouchableOpacity>
           </View>
 
           <ScrollView

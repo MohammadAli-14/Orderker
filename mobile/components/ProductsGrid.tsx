@@ -97,9 +97,9 @@ const ProductsGrid = ({ products, isLoading, isError }: ProductsGridProps) => {
             disabled={isAddingToCart}
           >
             {isAddingToCart ? (
-              <ActivityIndicator size="small" color="#121212" />
+              <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Ionicons name="add" size={18} color="#121212" />
+              <Ionicons name="add" size={18} color="#FFFFFF" />
             )}
           </TouchableOpacity>
         </View>

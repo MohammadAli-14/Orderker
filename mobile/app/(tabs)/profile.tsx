@@ -44,12 +44,12 @@ const ProfileScreen = () => {
                 >
                   <Image
                     source={user?.imageUrl}
-                    style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: "#1DB954" }}
+                    style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: "#5E2D87" }}
                     transition={200}
                   />
                 </View>
                 <View className="absolute -bottom-1 -right-1 bg-primary rounded-full size-7 items-center justify-center border-2 border-surface">
-                  <Ionicons name="checkmark" size={16} color="#121212" />
+                  <Ionicons name="checkmark" size={16} color="white" />
                 </View>
               </View>
 
@@ -102,7 +102,7 @@ const ProfileScreen = () => {
           activeOpacity={0.7}
           onPress={() => router.push("/privacy-security")}
           style={{
-            shadowColor: "#1DB954",
+            shadowColor: "#5E2D87",
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
             shadowRadius: 6,
@@ -112,7 +112,7 @@ const ProfileScreen = () => {
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center">
               <View className="bg-primary/20 rounded-xl w-11 h-11 items-center justify-center mr-3">
-                <Ionicons name="shield-checkmark" size={22} color="#1DB954" />
+                <Ionicons name="shield-checkmark" size={22} color="#5E2D87" />
               </View>
               <View>
                 <Text className="text-text-primary font-bold text-base">Privacy & Security</Text>

@@ -1,241 +1,234 @@
-import RatingModal from "@/components/RatingModal";
 import SafeScreen from "@/components/SafeScreen";
 import { useOrders } from "@/hooks/useOrders";
-import { useReviews } from "@/hooks/useReviews";
-import { capitalizeFirstLetter, formatDate, getStatusColor, formatCurrency } from "@/lib/utils";
-import { Order } from "@/types";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
+import {
+  ActivityIndicator,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  View,
+  RefreshControl,
+  Image,
+} from "react-native";
 import { useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import GradientButton from "@/components/GradientButton";
-import { OrderCardSkeleton } from "@/components/Skeleton";
+import OrderRatingModal from "@/components/OrderRatingModal";
+import { Order } from "@/types";
 
-function OrdersScreen() {
-  const { data: orders, isLoading, isError } = useOrders();
-  const { createReviewAsync, isCreatingReview } = useReviews();
-
-  const [showRatingModal, setShowRatingModal] = useState(false);
+const OrdersScreen = () => {
+  const router = useRouter();
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useOrders();
+  const [isRatingModalVisible, setIsRatingModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [productRatings, setProductRatings] = useState<{ [key: string]: number }>({});
 
-  const handleOpenRating = (order: Order) => {
-    setShowRatingModal(true);
+  const flatOrders = data?.pages.flatMap((page) => page.orders) || [];
+
+  const handleLeaveRating = (order: Order) => {
     setSelectedOrder(order);
-
-    // init ratings for all product to 0 - resettin the state for each product
-    const initialRatings: { [key: string]: number } = {};
-    order.orderItems.forEach((item) => {
-      // Use product._id if available, otherwise skip (product was deleted)
-      const productId = item.product?._id;
-      if (productId) {
-        initialRatings[productId] = 0;
-      }
-    });
-    setProductRatings(initialRatings);
+    setIsRatingModalVisible(true);
   };
 
-  const handleSubmitRating = async () => {
-    if (!selectedOrder) return;
-
-    // Filter items with valid products
-    const validItems = selectedOrder.orderItems.filter((item) => item.product?._id);
-
-    // check if all products have been rated
-    const allRated = validItems.every((item) => productRatings[item.product._id] > 0);
-    if (!allRated) {
-      Alert.alert("Error", "Please rate all products");
-      return;
-    }
-
-    try {
-      await Promise.all(
-        validItems.map((item) => {
-          createReviewAsync({
-            productId: item.product._id,
-            orderId: selectedOrder._id,
-            rating: productRatings[item.product._id],
-          });
-        })
-      );
-
-      Alert.alert("Success", "Thank you for rating all products!");
-      setShowRatingModal(false);
-      setSelectedOrder(null);
-      setProductRatings({});
-    } catch (error: any) {
-      Alert.alert("Error", error?.response?.data?.error || "Failed to submit rating");
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "pending":
+        return "bg-orange-100 text-orange-700";
+      case "processing":
+        return "bg-blue-100 text-blue-700";
+      case "shipped":
+        return "bg-blue-100 text-blue-700";
+      case "delivered":
+        return "bg-green-100 text-green-700";
+      case "cancelled":
+        return "bg-red-100 text-red-700";
+      default:
+        return "bg-gray-100 text-gray-700";
     }
   };
+
+  if (isLoading && !isFetchingNextPage) {
+    return (
+      <SafeScreen>
+        <View className="px-6 py-4 flex-row items-center border-b border-gray-100 bg-white">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="w-10 h-10 items-center justify-center -ml-2 mr-2"
+          >
+            <Ionicons name="arrow-back" size={24} color="#1F2937" />
+          </TouchableOpacity>
+          <Text className="text-xl font-bold text-text-primary">My Orders</Text>
+        </View>
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#5E2D87" />
+        </View>
+      </SafeScreen>
+    );
+  }
+
+  if (isError) {
+    return (
+      <SafeScreen>
+        <View className="px-6 py-4 flex-row items-center border-b border-gray-100 bg-white">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="w-10 h-10 items-center justify-center -ml-2 mr-2"
+          >
+            <Ionicons name="arrow-back" size={24} color="#1F2937" />
+          </TouchableOpacity>
+          <Text className="text-xl font-bold text-text-primary">My Orders</Text>
+        </View>
+        <View className="flex-1 items-center justify-center px-6">
+          <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
+          <Text className="text-text-primary text-xl font-bold mt-4">Failed to load orders</Text>
+          <TouchableOpacity onPress={() => refetch()} className="mt-4 bg-primary px-6 py-3 rounded-full">
+            <Text className="text-white font-bold">Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeScreen>
+    );
+  }
 
   return (
     <SafeScreen>
-      {/* Header */}
-      <View className="px-6 pb-5 border-b border-surface flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
-          <Ionicons name="arrow-back" size={28} color="#FFFFFF" />
+      <View className="px-6 py-4 flex-row items-center border-b border-gray-100 bg-white">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 items-center justify-center -ml-2 mr-2"
+        >
+          <Ionicons name="arrow-back" size={24} color="#1F2937" />
         </TouchableOpacity>
-        <Text className="text-text-primary text-2xl font-bold">My Orders</Text>
+        <Text className="text-xl font-bold text-text-primary">My Orders</Text>
       </View>
 
-      {isLoading ? (
-        <LoadingUI />
-      ) : isError ? (
-        <ErrorUI />
-      ) : !orders || orders.length === 0 ? (
-        <EmptyUI />
-      ) : (
-        <ScrollView
-          className="flex-1"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
-        >
-          <View className="px-6 py-4">
-            {orders.map((order) => {
-              const totalItems = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
-              const firstImage = order.orderItems[0]?.image || "";
+      <FlatList
+        data={flatOrders}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={isLoading && !isFetchingNextPage} onRefresh={refetch} colors={["#5E2D87"]} />}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View className="py-4">
+              <ActivityIndicator color="#5E2D87" />
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          <View className="items-center justify-center py-20">
+            <View className="w-20 h-20 bg-surface rounded-full items-center justify-center mb-4">
+              <Ionicons name="bag-handle-outline" size={40} color="#9CA3AF" />
+            </View>
+            <Text className="text-text-primary text-xl font-bold">No orders yet</Text>
+            <Text className="text-text-secondary text-center mt-2">
+              Start shopping to see your orders here
+            </Text>
+          </View>
+        }
+        renderItem={({ item: order }) => {
+          const statusConfig = getStatusColor(order.status);
+          const [bgClass, textClass] = statusConfig.split(" ");
+          const firstItem = order.orderItems[0];
+          const itemCount = order.orderItems.length;
 
-              return (
-                <View key={order._id} className="bg-surface rounded-3xl p-5 mb-4">
-                  <View className="flex-row mb-4">
-                    <View className="relative">
-                      <Image
-                        source={firstImage}
-                        style={{ height: 80, width: 80, borderRadius: 8 }}
-                        contentFit="cover"
-                      />
-
-                      {/* BADGE FOR MORE ITEMS */}
-                      {order.orderItems.length > 1 && (
-                        <View className="absolute -bottom-1 -right-1 bg-primary rounded-full size-7 items-center justify-center">
-                          <Text className="text-background text-xs font-bold">
-                            +{order.orderItems.length - 1}
-                          </Text>
-                        </View>
-                      )}
+          return (
+            <TouchableOpacity
+              activeOpacity={0.9}
+              className="bg-white rounded-2xl p-4 mb-4 border border-gray-100 shadow-sm"
+            >
+              <View className="flex-row gap-4">
+                {/* Image */}
+                <View className="w-24 h-24 bg-gray-50 rounded-xl items-center justify-center relative overflow-hidden">
+                  {firstItem?.image ? (
+                    <Image
+                      source={{ uri: firstItem.image }}
+                      style={{ width: "100%", height: "100%" }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Ionicons name="cube-outline" size={32} color="#9CA3AF" />
+                  )}
+                  {itemCount > 1 && (
+                    <View className="absolute bottom-0 right-0 bg-primary px-1.5 py-0.5 rounded-tl-lg">
+                      <Text className="text-white text-[10px] font-bold">+{itemCount - 1}</Text>
                     </View>
+                  )}
+                </View>
 
-                    <View className="flex-1 ml-4">
-                      <Text className="text-text-primary font-bold text-base mb-1">
-                        Order #{order._id.slice(-8).toUpperCase()}
-                      </Text>
-                      <Text className="text-text-secondary text-sm mb-2">
-                        {formatDate(order.createdAt)}
-                      </Text>
-                      <View
-                        className="self-start px-3 py-1.5 rounded-full"
-                        style={{ backgroundColor: getStatusColor(order.status) + "20" }}
-                      >
-                        <Text
-                          className="text-xs font-bold"
-                          style={{ color: getStatusColor(order.status) }}
-                        >
-                          {capitalizeFirstLetter(order.status)}
+                {/* Content */}
+                <View className="flex-1 justify-between">
+                  <View>
+                    <View className="flex-row justify-between items-start mb-1">
+                      <Text className="font-bold text-sm text-text-primary">Order #{order._id.slice(-8).toUpperCase()}</Text>
+                      <View className={`px-2 py-1 rounded-full ${bgClass}`}>
+                        <Text className={`text-[10px] font-bold uppercase tracking-wide ${textClass}`}>
+                          {order.status}
                         </Text>
                       </View>
                     </View>
-                  </View>
-
-                  {/* ORDER ITEMS SUMMARY */}
-                  {order.orderItems.map((item, index) => (
-                    <Text
-                      key={item._id}
-                      className="text-text-secondary text-sm flex-1"
-                      numberOfLines={1}
-                    >
-                      {item.name} × {item.quantity}
+                    <Text className="text-xs text-text-secondary mb-1">{formatDate(order.createdAt)}</Text>
+                    <Text className="text-sm text-text-primary line-clamp-1" numberOfLines={1}>
+                      {firstItem?.name} {itemCount > 1 && ", ..."}
                     </Text>
-                  ))}
-
-                  <View className="border-t border-background-lighter pt-3 flex-row justify-between items-center">
-                    <View>
-                      <Text className="text-text-secondary text-xs mb-1">{totalItems} items</Text>
-                      <Text className="text-primary font-bold text-xl">
-                        {formatCurrency(order.totalPrice)}
-                      </Text>
-                    </View>
-
-                    {order.status === "delivered" &&
-                      (order.hasReviewed ? (
-                        <View className="bg-primary/20 px-5 py-3 rounded-full flex-row items-center">
-                          <Ionicons name="checkmark-circle" size={18} color="#1DB954" />
-                          <Text className="text-primary font-bold text-sm ml-2">Reviewed</Text>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          className="bg-primary px-5 py-3 rounded-full flex-row items-center"
-                          activeOpacity={0.7}
-                          onPress={() => handleOpenRating(order)}
-                        >
-                          <Ionicons name="star" size={18} color="#121212" />
-                          <Text className="text-background font-bold text-sm ml-2">
-                            Leave Rating
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
+                    <Text className="text-xs text-text-secondary mt-1">{itemCount} items</Text>
                   </View>
                 </View>
-              );
-            })}
-          </View>
-        </ScrollView>
-      )}
+              </View>
 
-      <RatingModal
-        visible={showRatingModal}
-        onClose={() => setShowRatingModal(false)}
+              <View className="h-px bg-gray-100 w-full my-4" />
+
+              <View className="flex-row items-center justify-between">
+                <Text className="font-bold text-lg text-primary">{formatCurrency(order.totalPrice)}</Text>
+
+                {order.status === "delivered" ? (
+                  <TouchableOpacity
+                    onPress={() => handleLeaveRating(order)}
+                    disabled={order.hasReviewed}
+                    className={`flex-row items-center px-3 py-1.5 rounded-lg ${order.hasReviewed ? 'bg-gray-100' : 'bg-primary/10'}`}
+                  >
+                    <Ionicons name="star" size={14} color={order.hasReviewed ? "#9CA3AF" : "#5E2D87"} />
+                    <Text className={`text-xs font-semibold ml-1.5 ${order.hasReviewed ? 'text-gray-400' : 'text-primary'}`}>
+                      {order.hasReviewed ? "Rating Submitted" : "Leave Rating"}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => router.push(`/(profile)/order/${order._id}` as any)}
+                    activeOpacity={0.7}
+                    accessibilityLabel="Track Order"
+                    accessibilityRole="button"
+                  >
+                    <Text className="text-sm font-medium text-primary">Track Order</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+      />
+
+      <OrderRatingModal
+        visible={isRatingModalVisible}
+        onClose={() => {
+          setIsRatingModalVisible(false);
+          setSelectedOrder(null);
+        }}
         order={selectedOrder}
-        productRatings={productRatings}
-        onSubmit={handleSubmitRating}
-        isSubmitting={isCreatingReview}
-        onRatingChange={(productId, rating) =>
-          setProductRatings((prev) => ({ ...prev, [productId]: rating }))
-        }
       />
     </SafeScreen>
   );
-}
+};
+
 export default OrdersScreen;
-
-function LoadingUI() {
-  return (
-    <View className="px-6 py-4">
-      {[1, 2, 3].map((i) => (
-        <OrderCardSkeleton key={i} />
-      ))}
-    </View>
-  );
-}
-
-function ErrorUI() {
-  return (
-    <View className="flex-1 items-center justify-center px-6">
-      <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
-      <Text className="text-text-primary font-semibold text-xl mt-4">Failed to load orders</Text>
-      <Text className="text-text-secondary text-center mt-2">
-        Please check your connection and try again
-      </Text>
-    </View>
-  );
-}
-
-function EmptyUI() {
-  return (
-    <View className="flex-1 items-center justify-center px-6">
-      <View className="bg-surface/50 rounded-full p-6 mb-4">
-        <Ionicons name="receipt-outline" size={64} color="#1DB954" />
-      </View>
-      <Text className="text-text-primary font-bold text-xl mt-2">No orders yet</Text>
-      <Text className="text-text-secondary text-center mt-2 mb-6">
-        Your order history will appear here
-      </Text>
-      <GradientButton
-        title="Start Shopping"
-        icon="storefront-outline"
-        onPress={() => router.push("/(tabs)/home")}
-        size="md"
-      />
-    </View>
-  );
-}

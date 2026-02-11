@@ -14,7 +14,7 @@ export const useAddresses = () => {
     queryKey: ["addresses"],
     queryFn: async () => {
       const { data } = await api.get<{ addresses: Address[] }>("/users/addresses");
-      return data.addresses;
+      return data?.addresses ?? [];
     },
   });
 

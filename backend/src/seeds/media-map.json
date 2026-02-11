@@ -1,0 +1,47 @@
+{
+  "Olper's Milk (1.5 Liter)": {
+    "originalUrl": "https://static-01.daraz.pk/p/721db29134ccce900ff4054e9492dfec.jpg",
+    "cloudinaryUrl": "https://res.cloudinary.com/dz6c9ocg7/image/upload/v1770708314/orderker_products/olper_s_milk__1_5_liter_.jpg",
+    "syncedAt": "2026-02-10T07:25:55.326Z"
+  },
+  "Pyaz (Onions)": {
+    "originalUrl": "https://images.unsplash.com/photo-1508747703725-719777637510?w=800",
+    "cloudinaryUrl": "https://res.cloudinary.com/dz6c9ocg7/image/upload/v1770708230/orderker_products/pyaz__onions_.jpg",
+    "syncedAt": "2026-02-10T07:23:50.415Z"
+  },
+  "Nestle Milk Pak (1 Liter)": {
+    "originalUrl": "https://static-01.daraz.pk/p/83e8cb1178374a3957159963144a9bab.jpg",
+    "cloudinaryUrl": "https://res.cloudinary.com/dz6c9ocg7/image/upload/v1770708312/orderker_products/nestle_milk_pak__1_liter_.jpg",
+    "syncedAt": "2026-02-10T07:25:51.792Z"
+  },
+  "Cheeni (Sugar)": {
+    "originalUrl": "https://static-01.daraz.pk/p/0e19d1e96cc90266bf2ff5c1ba88133f.jpg",
+    "cloudinaryUrl": "https://res.cloudinary.com/dz6c9ocg7/image/upload/v1770708316/orderker_products/cheeni__sugar_.jpg",
+    "syncedAt": "2026-02-10T07:25:56.691Z"
+  },
+  "Daal Chana": {
+    "originalUrl": "https://static-01.daraz.pk/p/86d66f2814d9eae2ea0d671628957c1b.jpg",
+    "cloudinaryUrl": "https://res.cloudinary.com/dz6c9ocg7/image/upload/v1770708318/orderker_products/daal_chana.jpg",
+    "syncedAt": "2026-02-10T07:25:57.973Z"
+  },
+  "Shan Biryani Masala (50g)": {
+    "originalUrl": "https://static-01.daraz.pk/p/63984962b46e3e539ca070ea9d08454b.jpg",
+    "cloudinaryUrl": "https://res.cloudinary.com/dz6c9ocg7/image/upload/v1770708319/orderker_products/shan_biryani_masala__50g_.jpg",
+    "syncedAt": "2026-02-10T07:25:59.624Z"
+  },
+  "National Mixed Pickle (900g)": {
+    "originalUrl": "https://static-01.daraz.pk/p/9990e45bbcd9130925ce3c22bd85cd8b.jpg",
+    "cloudinaryUrl": "https://res.cloudinary.com/dz6c9ocg7/image/upload/v1770708321/orderker_products/national_mixed_pickle__900g_.jpg",
+    "syncedAt": "2026-02-10T07:26:00.678Z"
+  },
+  "Dhania Powder (Coriander)": {
+    "originalUrl": "https://static-01.daraz.pk/p/a65a13dd8d684f0b43cd72d0f68dd3e4.png",
+    "cloudinaryUrl": "https://res.cloudinary.com/dz6c9ocg7/image/upload/v1770708324/orderker_products/dhania_powder__coriander_.png",
+    "syncedAt": "2026-02-10T07:26:04.115Z"
+  },
+  "Zeera (Cumin Seeds)": {
+    "originalUrl": "https://static-01.daraz.pk/p/c2a872b999cef1dec34e005983f76eac.png",
+    "cloudinaryUrl": "https://res.cloudinary.com/dz6c9ocg7/image/upload/v1770708328/orderker_products/zeera__cumin_seeds_.png",
+    "syncedAt": "2026-02-10T07:26:07.186Z"
+  }
+}

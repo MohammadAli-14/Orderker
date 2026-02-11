@@ -34,7 +34,7 @@ function CustomersPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="table">
+              <table className="table table-zebra">
                 <thead>
                   <tr>
                     <th>Customer</th>

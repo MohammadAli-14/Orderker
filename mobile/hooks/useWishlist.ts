@@ -14,7 +14,7 @@ const useWishlist = () => {
     queryKey: ["wishlist"],
     queryFn: async () => {
       const { data } = await api.get<{ wishlist: Product[] }>("/users/wishlist");
-      return data.wishlist;
+      return data?.wishlist ?? [];
     },
   });
 

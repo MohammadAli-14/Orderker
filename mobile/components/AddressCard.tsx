@@ -18,7 +18,11 @@ export default function AddressCard({
   isDeletingAddress,
 }: AddressCardProps) {
   return (
-    <View className="bg-surface rounded-3xl p-5 mb-3">
+    <View
+      className="bg-surface rounded-3xl p-5 mb-3"
+      accessibilityLabel={`${address.label} address for ${address.fullName}, ${address.streetAddress}, ${address.city}`}
+      accessibilityRole="none"
+    >
       <View className="flex-row items-center justify-between mb-4">
         <View className="flex-row items-center">
           <View className="bg-primary/20 rounded-full w-12 h-12 items-center justify-center mr-3">
@@ -46,6 +50,9 @@ export default function AddressCard({
           activeOpacity={0.7}
           onPress={() => onEdit(address)}
           disabled={isUpdatingAddress}
+          accessibilityLabel={`Edit ${address.label} address`}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isUpdatingAddress }}
         >
           <Text className="text-primary font-bold">Edit</Text>
         </TouchableOpacity>
@@ -54,6 +61,9 @@ export default function AddressCard({
           activeOpacity={0.7}
           onPress={() => onDelete(address._id, address.label)}
           disabled={isDeletingAddress}
+          accessibilityLabel={`Delete ${address.label} address`}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isDeletingAddress }}
         >
           <Text className="text-red-500 font-bold">Delete</Text>
         </TouchableOpacity>

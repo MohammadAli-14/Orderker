@@ -4,11 +4,14 @@ import { router } from "expo-router";
 
 export default function AddressesHeader() {
   return (
-    <View className="px-6 pb-5 border-b border-surface flex-row items-center">
-      <TouchableOpacity onPress={() => router.back()} className="mr-4">
-        <Ionicons name="arrow-back" size={28} color="#FFFFFF" />
+    <View className="px-6 py-4 flex-row items-center border-b border-gray-100 bg-white">
+      <TouchableOpacity
+        onPress={() => router.back()}
+        className="w-10 h-10 items-center justify-center -ml-2 mr-2"
+      >
+        <Ionicons name="arrow-back" size={24} color="#1F2937" />
       </TouchableOpacity>
-      <Text className="text-text-primary text-2xl font-bold">My Addresses</Text>
+      <Text className="text-xl font-bold text-text-primary">My Addresses</Text>
     </View>
   );
 }

@@ -1,7 +1,12 @@
 import multer from "multer";
 import path from "path";
 
+import os from "os";
+
 const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, os.tmpdir());
+  },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname || "").toLowerCase();
     const safeExt = [".jpeg", ".jpg", ".png", ".webp"].includes(ext) ? ext : "";

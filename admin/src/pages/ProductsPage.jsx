@@ -136,7 +136,7 @@ function ProductsPage() {
           const status = getStockStatusBadge(product.stock);
 
           return (
-            <div key={product._id} className="card bg-base-100 shadow-xl">
+            <div key={product._id} className="card bg-base-100 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
               <div className="card-body">
                 <div className="flex items-center gap-6">
                   <div className="avatar">

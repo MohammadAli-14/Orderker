@@ -11,7 +11,7 @@ interface GradientButtonProps extends TouchableOpacityProps {
 }
 
 const GRADIENTS = {
-    primary: ["#1ED760", "#1DB954", "#1AA34A"] as const,
+    primary: ["#7C3AED", "#5D3EBC", "#4C1D95"] as const, // Purple gradient
     success: ["#22C55E", "#16A34A", "#15803D"] as const,
     danger: ["#EF4444", "#DC2626", "#B91C1C"] as const,
 };
@@ -35,6 +35,9 @@ const GradientButton = ({
         <TouchableOpacity
             activeOpacity={0.9}
             disabled={disabled || isLoading}
+            accessibilityLabel={title}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !!(disabled || isLoading) }}
             {...props}
         >
             <LinearGradient
@@ -45,11 +48,11 @@ const GradientButton = ({
             >
                 <View className="flex-row items-center justify-center">
                     {isLoading ? (
-                        <ActivityIndicator size="small" color="#121212" />
+                        <ActivityIndicator size="small" color="white" />
                     ) : (
                         <>
-                            <Text className="text-background font-bold text-lg mr-2">{title}</Text>
-                            {icon && <Ionicons name={icon} size={20} color="#121212" />}
+                            <Text className="text-white font-bold text-lg mr-2">{title}</Text>
+                            {icon && <Ionicons name={icon} size={20} color="white" />}
                         </>
                     )}
                 </View>

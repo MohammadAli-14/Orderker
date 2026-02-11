@@ -47,20 +47,20 @@ function OrdersPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
+              <table className="table table-zebra">
+                <thead className="sticky top-0 bg-base-100 z-20 shadow-sm">
                   <tr>
-                    <th>Order ID</th>
-                    <th>Customer</th>
-                    <th>Items</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Payment</th>
-                    <th>Date</th>
+                    <th className="py-5">Order ID</th>
+                    <th className="py-5">Customer</th>
+                    <th className="py-5">Items</th>
+                    <th className="py-5">Total</th>
+                    <th className="py-5 text-center">Status</th>
+                    <th className="py-5">Payment</th>
+                    <th className="py-5">Date</th>
                   </tr>
                 </thead>
 
-                <tbody>
+                <tbody className="divide-y divide-base-200">
                   {orders.map((order) => {
                     const totalQuantity = order.orderItems.reduce(
                       (sum, item) => sum + item.quantity,
@@ -68,46 +68,49 @@ function OrdersPage() {
                     );
 
                     return (
-                      <tr key={order._id}>
-                        <td>
-                          <span className="font-medium">#{order._id.slice(-8).toUpperCase()}</span>
+                      <tr key={order._id} className="hover:bg-base-200/50 transition-colors">
+                        <td className="align-middle py-5">
+                          <span className="font-mono text-sm opacity-70">#{order._id.slice(-8).toUpperCase()}</span>
                         </td>
 
-                        <td>
-                          <div className="font-medium">{order.shippingAddress.fullName}</div>
-                          <div className="text-sm opacity-60">
-                            {order.shippingAddress.city}, {order.shippingAddress.state}
+                        <td className="align-middle py-5">
+                          <div className="font-semibold">{order.shippingAddress.fullName}</div>
+                          <div className="text-xs opacity-50">
+                            {order.shippingAddress.city}
                           </div>
                         </td>
 
-                        <td>
-                          <div className="font-medium">
+                        <td className="align-middle py-5">
+                          <div className="text-sm font-medium">
                             {totalQuantity} {totalQuantity === 1 ? "item" : "items"}
                           </div>
-                          <div className="text-sm opacity-60">
-                            {order.orderItems[0]?.name}
-                            {order.orderItems.length > 1 && ` +${order.orderItems.length - 1} more`}
+                        </td>
+
+                        <td className="align-middle py-5">
+                          <span className="font-bold text-sm">{formatCurrency(order.totalPrice)}</span>
+                        </td>
+
+                        <td className="align-middle py-5 text-center">
+                          <div className="inline-block min-w-[140px]">
+                            <select
+                              value={order.status}
+                              onChange={(e) => handleStatusChange(order._id, e.target.value)}
+                              className={`select select-sm select-bordered w-full h-10 font-bold transition-all border-2 focus:ring-2 focus:ring-offset-1 ${order.status === "delivered" ? "text-success-content border-success bg-success/90 hover:bg-success" :
+                                order.status === "shipped" ? "text-info-content border-info bg-info/90 hover:bg-info" :
+                                  order.status === "cancelled" ? "text-error-content border-error bg-error/90 hover:bg-error" :
+                                    "text-warning-content border-warning bg-warning/90 hover:bg-warning"
+                                }`}
+                              disabled={updateStatusMutation.isPending}
+                            >
+                              <option value="pending" className="bg-base-100 text-base-content">Pending</option>
+                              <option value="shipped" className="bg-base-100 text-base-content">Shipped</option>
+                              <option value="delivered" className="bg-base-100 text-base-content">Delivered</option>
+                              <option value="cancelled" className="bg-base-100 text-base-content">Cancelled</option>
+                            </select>
                           </div>
                         </td>
 
-                        <td>
-                          <span className="font-semibold">{formatCurrency(order.totalPrice)}</span>
-                        </td>
-
-                        <td>
-                          <select
-                            value={order.status}
-                            onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                            className="select select-sm select-bordered"
-                            disabled={updateStatusMutation.isPending}
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="shipped">Shipped</option>
-                            <option value="delivered">Delivered</option>
-                          </select>
-                        </td>
-
-                        <td>
+                        <td className="align-middle py-5">
                           <div className="flex flex-col">
                             <div className="font-medium text-sm">
                               {order.paymentMethod === "Stripe" ? "Card" : order.paymentMethod}
@@ -130,7 +133,7 @@ function OrdersPage() {
                           </div>
                         </td>
 
-                        <td>
+                        <td className="align-middle py-5">
                           <span className="text-sm opacity-60">{formatDate(order.createdAt)}</span>
                         </td>
                       </tr>

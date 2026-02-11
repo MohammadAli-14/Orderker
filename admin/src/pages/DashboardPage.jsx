@@ -42,20 +42,44 @@ function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-8">
+      {/* Background Glows (Very Subtle) */}
+      <div className="absolute top-0 -right-20 w-96 h-96 bg-primary/5 rounded-full blur-[128px] pointer-events-none" />
+      <div className="absolute bottom-20 -left-20 w-80 h-80 bg-secondary/5 rounded-full blur-[128px] pointer-events-none" />
+
       {/* STATS */}
-      <div className="stats stats-vertical lg:stats-horizontal shadow w-full bg-base-100">
-        {statsCards.map((stat) => (
-          <div key={stat.name} className="stat">
-            <div className="stat-figure text-primary">{stat.icon}</div>
-            <div className="stat-title">{stat.name}</div>
-            <div className="stat-value">{stat.value}</div>
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statsCards.map((stat, index) => (
+          <div
+            key={stat.name}
+            className="group relative card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden"
+          >
+            {/* Gradient Background Glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+            <div className="card-body relative">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-xs font-medium uppercase tracking-wider text-base-content/60 mb-2">
+                    {stat.name}
+                  </p>
+                  <p className="text-3xl font-extrabold tracking-tight text-base-content">
+                    {stat.value}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 group-hover:bg-primary/20 transition-colors duration-300">
+                  <div className="text-primary">
+                    {stat.icon}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
       {/* RECENT ORDERS */}
-      <div className="card bg-base-100 shadow-xl">
+      <div className="relative z-10 card bg-base-100 shadow-xl">
         <div className="card-body">
           <h2 className="card-title">Recent Orders</h2>
 
@@ -67,7 +91,7 @@ function DashboardPage() {
             <div className="text-center py-8 text-base-content/60">No orders yet</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="table">
+              <table className="table table-zebra">
                 <thead>
                   <tr>
                     <th>Order ID</th>

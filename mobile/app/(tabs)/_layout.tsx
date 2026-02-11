@@ -2,44 +2,37 @@ import { Redirect, Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@clerk/clerk-expo";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
-import { StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const TabsLayout = () => {
   const { isSignedIn, isLoaded } = useAuth();
   const insets = useSafeAreaInsets();
 
-  if (!isLoaded) return null; // for a better ux
-  if (!isSignedIn) return <Redirect href={"/(auth)/login"} />;
+  if (!isLoaded) return null;
+
+  // If not signed in, redirect to welcome
+  if (!isSignedIn) return <Redirect href={"/"} />;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#1DB954",
-        tabBarInactiveTintColor: "#B3B3B3",
+        tabBarActiveTintColor: "#5E2D87", // Deep Purple
+        tabBarInactiveTintColor: "#9CA3AF", // Light Gray
         tabBarStyle: {
-          position: "absolute",
-          backgroundColor: "transparent",
+          backgroundColor: "#FFFFFF",
           borderTopWidth: 0,
-          height: 32 + insets.bottom,
-          paddingTop: 4,
-          marginHorizontal: 100,
-          marginBottom: insets.bottom,
-          borderRadius: 24,
-          overflow: "hidden",
+          elevation: 0, // Android shadow remove
+          shadowOpacity: 0.05, // iOS subtle shadow
+          shadowRadius: 10,
+          height: 60 + insets.bottom,
+          paddingTop: 10,
+          paddingBottom: insets.bottom + 10,
         },
-        tabBarBackground: () => (
-          <BlurView
-            intensity={80}
-            tint="dark"
-            style={StyleSheet.absoluteFill}
-          // StyleSheet.absoluteFill is equal to this 👇
-          // { position: "absolute", top: 0, right: 0, left: 0, bottom: 0 }
-          />
-        ),
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: 600,
+          fontFamily: "PlusJakartaSans_600SemiBold",
+          fontWeight: "600",
         },
         headerShown: false,
       }}
@@ -47,22 +40,36 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="home"
         options={{
-          title: "Browse",
-          tabBarIcon: ({ color, size }) => <Ionicons name="grid" size={size} color={color} />,
+          title: "Shop",
+          tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: "Search",
+          tabBarIcon: ({ color, size }) => <Ionicons name="search-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="cart"
         options={{
           title: "Cart",
-          tabBarIcon: ({ color, size }) => <Ionicons name="cart" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="cart-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="wishlist"
+        options={{
+          title: "Wishlist",
+          tabBarIcon: ({ color, size }) => <Ionicons name="heart-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+          title: "Account",
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
       />
     </Tabs>

@@ -1,0 +1,186 @@
+import SafeScreen from "@/components/SafeScreen";
+import useWishlist from "@/hooks/useWishlist";
+import useCart from "@/hooks/useCart";
+import { formatCurrency } from "@/lib/utils";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useState, useCallback } from "react";
+import { Alert, View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import GradientButton from "@/components/GradientButton";
+
+export default function WishlistScreen() {
+    const router = useRouter();
+    const { wishlist, isLoading, isError, removeFromWishlist, wishlistCount, isRemovingFromWishlist } = useWishlist();
+    const { addToCart, isAddingToCart } = useCart();
+    const [isRedirecting, setIsRedirecting] = useState(false);
+
+    const handleBrowseProducts = () => {
+        setIsRedirecting(true);
+        // Small delay to make it feel "active"
+        setTimeout(() => {
+            router.push("/(tabs)/home");
+        }, 800);
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            setIsRedirecting(false);
+        }, [])
+    );
+
+    const handleAddToCart = (productId: string, productName: string) => {
+        addToCart(
+            { productId, quantity: 1 },
+            {
+                onSuccess: () => Alert.alert("Success", `${productName} added to cart!`),
+                onError: (error: any) => {
+                    Alert.alert("Error", error?.response?.data?.error || "Failed to add to cart");
+                },
+            }
+        );
+    };
+
+    const handleRemove = (productId: string, productName: string) => {
+        Alert.alert("Remove from wishlist", `Are you sure you want to remove ${productName}?`, [
+            { text: "Cancel", style: "cancel" },
+            {
+                text: "Remove",
+                style: "destructive",
+                onPress: () => removeFromWishlist(productId),
+            },
+        ]);
+    };
+
+    if (isLoading) {
+        return (
+            <SafeScreen>
+                <View className="flex-1 items-center justify-center bg-white">
+                    <ActivityIndicator size="large" color="#5E2D87" />
+                </View>
+            </SafeScreen>
+        );
+    }
+
+    return (
+        <SafeScreen>
+            {/* Standard Header */}
+            <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    className="w-10 h-10 items-center justify-center -ml-2"
+                >
+                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                </TouchableOpacity>
+                <Text className="text-xl font-bold text-text-primary">Wishlist</Text>
+                <View className="bg-primary/10 px-3 py-1 rounded-full">
+                    <Text className="text-primary text-xs font-bold">{wishlistCount} items</Text>
+                </View>
+            </View>
+
+            <ScrollView
+                className="flex-1 bg-white"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 100 }}
+            >
+                {/* Empty State */}
+                {wishlist.length === 0 && !isLoading && (
+                    <View className="items-center justify-center py-20 px-6">
+                        <View className="w-28 h-28 bg-primary/5 rounded-full items-center justify-center mb-8 border border-primary/10">
+                            <Ionicons name="heart-outline" size={52} color="#5E2D87" />
+                        </View>
+                        <Text className="text-2xl font-bold text-text-primary mb-3">Your wishlist is empty</Text>
+                        <Text className="text-text-secondary text-center px-6 leading-6 text-base">
+                            Save items that you love so you can find them later and easily add them to your cart.
+                        </Text>
+
+                        <TouchableOpacity
+                            onPress={handleBrowseProducts}
+                            disabled={isRedirecting}
+                            className={`mt-10 px-10 py-4 rounded-full flex-row items-center justify-center shadow-lg shadow-primary/30 ${isRedirecting ? "bg-primary/70" : "bg-primary"
+                                }`}
+                            activeOpacity={0.8}
+                        >
+                            {isRedirecting ? (
+                                <ActivityIndicator color="white" />
+                            ) : (
+                                <>
+                                    <Text className="text-white font-bold text-lg mr-2">Browse Products</Text>
+                                    <Ionicons name="compass-outline" size={22} color="white" />
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Wishlist Items */}
+                {wishlist.map((item) => (
+                    <View key={item._id} className="bg-white rounded-2xl p-4 shadow-sm mb-4 border border-gray-100">
+                        <View className="flex-row mb-4">
+                            {/* Image */}
+                            <View className="w-24 h-24 bg-surface rounded-2xl items-center justify-center overflow-hidden">
+                                <Image
+                                    source={item.images?.[0] || "https://via.placeholder.com/150"}
+                                    style={{ width: "100%", height: "100%" }}
+                                    contentFit="cover"
+                                />
+                            </View>
+
+                            {/* Details */}
+                            <View className="flex-1 ml-4 justify-between">
+                                <View className="flex-row justify-between items-start">
+                                    <View className="flex-1">
+                                        <Text className="font-bold text-base text-text-primary pr-2" numberOfLines={2}>
+                                            {item.name}
+                                        </Text>
+                                        <View className="flex-row items-center mt-1">
+                                            <View className={`w-2 h-2 rounded-full ${item.stock > 0 ? "bg-green-500" : "bg-red-500"} mr-2`} />
+                                            <Text className={`text-xs font-semibold ${item.stock > 0 ? "text-green-600" : "text-red-500"}`}>
+                                                {item.stock > 0 ? `${item.stock} in stock` : "Out of stock"}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => handleRemove(item._id, item.name)}
+                                        className="bg-red-50 w-8 h-8 rounded-full items-center justify-center"
+                                        disabled={isRemovingFromWishlist}
+                                    >
+                                        {isRemovingFromWishlist ? (
+                                            <ActivityIndicator size="small" color="#EF4444" />
+                                        ) : (
+                                            <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Price */}
+                                <Text className="text-xl font-bold text-primary">
+                                    {formatCurrency(item.price)}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Add to Cart Button */}
+                        <TouchableOpacity
+                            onPress={() => handleAddToCart(item._id, item.name)}
+                            disabled={item.stock === 0 || isAddingToCart}
+                            className={`w-full py-4 rounded-xl flex-row items-center justify-center active:opacity-70 ${item.stock > 0 ? "bg-primary" : "bg-gray-100"
+                                }`}
+                        >
+                            {isAddingToCart ? (
+                                <ActivityIndicator size="small" color="white" />
+                            ) : (
+                                <>
+                                    <Ionicons name="cart-outline" size={20} color={item.stock > 0 ? "white" : "#9CA3AF"} />
+                                    <Text className={`font-bold ml-2 ${item.stock > 0 ? "text-white" : "text-gray-400"}`}>
+                                        Add to Cart
+                                    </Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                ))}
+            </ScrollView>
+        </SafeScreen>
+    );
+}

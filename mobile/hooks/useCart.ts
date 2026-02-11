@@ -14,7 +14,7 @@ const useCart = () => {
     queryKey: ["cart"],
     queryFn: async () => {
       const { data } = await api.get<{ cart: Cart }>("/cart");
-      return data.cart;
+      return data?.cart ?? { items: [] };
     },
   });
 

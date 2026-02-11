@@ -54,8 +54,10 @@ export interface Order {
     status: string;
   };
   totalPrice: number;
-  status: "pending" | "shipped" | "delivered";
+  status: "pending" | "shipped" | "delivered" | "cancelled";
   hasReviewed: boolean;
+  shippedAt?: string;
+  deliveredAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -92,4 +94,23 @@ export interface Cart {
   items: CartItem[];
   createdAt: string;
   updatedAt: string;
+}
+export interface AppConfig {
+  minimum_version: string;
+  latest_version: string;
+  force_update: boolean;
+  maintenance: boolean;
+  maintenance_message: string;
+  update_url: string;
+  banners: Array<{
+    id: string;
+    image: string;
+    action: string;
+  }>;
+  features: {
+    enable_reviews: boolean;
+    enable_wishlist: boolean;
+    enable_jazzcash: boolean;
+    enable_easypaisa: boolean;
+  };
 }

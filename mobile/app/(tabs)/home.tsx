@@ -1,140 +1,335 @@
-import ProductsGrid from "@/components/ProductsGrid";
+import { View, Text, ScrollView, TouchableOpacity, FlatList, ActivityIndicator, Alert } from "react-native";
 import SafeScreen from "@/components/SafeScreen";
-import useProducts from "@/hooks/useProducts";
-
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from "react-native";
+import { SearchInput } from "../../components/SearchInput";
+import { ProductCard } from "../../components/ProductCard";
+import { useUser } from "@clerk/clerk-expo";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useState, useMemo, useEffect, useRef } from "react";
+import useProducts from "@/hooks/useProducts";
+import { Image } from "expo-image";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LocationSelectionModal } from "../../components/LocationSelectionModal";
+import { HeroCarousel } from "../../components/HeroCarousel";
+import useCart from "@/hooks/useCart";
+import useWishlist from "@/hooks/useWishlist";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 
-const CATEGORIES = [
-  { name: "All", icon: "grid-outline" as const },
-  { name: "Sabzi", icon: "leaf-outline" as const },
-  { name: "Phal", icon: "nutrition-outline" as const },
-  { name: "Staples", icon: "basket-outline" as const },
-  { name: "Dairy & Eggs", icon: "egg-outline" as const },
-  { name: "Masalay", icon: "flame-outline" as const },
-  { name: "Snacks", icon: "fast-food-outline" as const },
-  { name: "Beverages", icon: "cafe-outline" as const },
-  { name: "Household", icon: "home-outline" as const },
-  { name: "Personal Care", icon: "body-outline" as const },
+// Icon mapping for dynamic categories
+const getCategoryIcon = (category: string) => {
+  const cat = category.toLowerCase();
+  if (cat.includes("dairy") || cat.includes("milk")) return "water";
+  if (cat.includes("snack") || cat.includes("chips")) return "fast-food";
+  if (cat.includes("bev") || cat.includes("drink") || cat.includes("juice")) return "wine";
+  if (cat.includes("fruit") || cat.includes("phal")) return "nutrition";
+  if (cat.includes("veg") || cat.includes("sabzi")) return "leaf";
+  if (cat.includes("fresh")) return "leaf";
+  if (cat.includes("food")) return "restaurant";
+  if (cat.includes("hygiene") || cat.includes("wash") || cat.includes("clean") || cat.includes("personal")) return "medkit";
+  return "grid"; // Default icon
+};
+
+// Fallback mock data if API fails
+const MOCK_PRODUCTS = [
+  { _id: "mock1", name: "Lassi (Sweet)", price: 120, category: "dairy", images: ["https://via.placeholder.com/150"], averageRating: 4.8, totalReviews: 128 },
+  { _id: "mock2", name: "Chips (Masala)", price: 60, category: "snacks", images: ["https://via.placeholder.com/150"], averageRating: 4.5, totalReviews: 86 },
+  { _id: "mock3", name: "Biscuits (Digestive)", price: 80, category: "snacks", images: ["https://via.placeholder.com/150"], averageRating: 4.9, totalReviews: 210 },
+  { _id: "mock4", name: "Hand Wash", price: 200, category: "personal care", images: ["https://via.placeholder.com/150"], averageRating: 4.7, totalReviews: 150 },
+  { _id: "mock5", name: "Fresh Milk", price: 180, category: "dairy", images: ["https://via.placeholder.com/150"], averageRating: 4.6, totalReviews: 95 },
+  { _id: "mock6", name: "Orange Juice", price: 250, category: "beverages", images: ["https://via.placeholder.com/150"], averageRating: 4.4, totalReviews: 72 },
 ];
 
-const ShopScreen = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+export default function HomeScreen() {
+  const { user } = useUser();
+  const router = useRouter();
 
-  const { data: products, isLoading, isError } = useProducts();
+  const [searchText, setSearchText] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
+  // Location state
+  const [userZone, setUserZone] = useState<string | null>(null);
+  const [userArea, setUserArea] = useState<string | null>(null);
+  const [userCity, setUserCity] = useState<string | null>(null);
+  const [isLiveLocation, setIsLiveLocation] = useState(false);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [isLocationLoaded, setIsLocationLoaded] = useState(false);
+
+  // API Hooks
+  const { data: apiProducts = [], isLoading, isError } = useProducts();
+  const { addToCart, isAddingToCart } = useCart();
+  const wishlistProps = useWishlist();
+  const { isInWishlist, toggleWishlist, isAddingToWishlist, isRemovingFromWishlist } = wishlistProps;
+
+  const { category: categoryParam } = useLocalSearchParams<{ category: string }>();
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [popularItemsY, setPopularItemsY] = useState(0);
+
+  // Load saved location and check for onboarding
+  useFocusEffect(
+    useCallback(() => {
+      const checkLocation = async () => {
+        if (!user?.id) return;
+
+        try {
+          const userId = user.id;
+          const savedZone = await AsyncStorage.getItem(`user_zone_${userId}`);
+          const savedArea = await AsyncStorage.getItem(`user_area_${userId}`);
+          const savedCity = await AsyncStorage.getItem(`user_city_${userId}`);
+          const savedMode = await AsyncStorage.getItem(`location_mode_${userId}`);
+
+          if (savedZone) {
+            setUserZone(savedZone);
+          } else {
+            setUserZone("Malir"); // Default UI state
+          }
+
+          if (savedArea) {
+            setUserArea(savedArea);
+          } else {
+            setUserArea("Malir Cantt"); // Default UI state
+          }
+
+          if (savedCity) setUserCity(savedCity || null);
+          if (savedMode === "auto") setIsLiveLocation(true);
+          else setIsLiveLocation(false);
+
+          setIsLocationLoaded(true);
+
+          if (!savedZone || !savedArea) {
+            setTimeout(() => setLocationModalVisible(true), 1500);
+          }
+
+          if (categoryParam) {
+            setSelectedCategory(categoryParam);
+
+            // Auto-scroll to products when a category is selected via carousel/params
+            // Delayed slightly to ensure layout is ready and list is filtered
+            setTimeout(() => {
+              if (scrollViewRef.current && popularItemsY > 0) {
+                scrollViewRef.current.scrollTo({
+                  y: popularItemsY - 20, // Offset a bit for better visibility
+                  animated: true,
+                });
+              }
+            }, 300);
+          }
+        } catch (error) {
+          console.error("Error checking location onboarding:", error);
+          setIsLocationLoaded(true);
+        }
+      };
+
+      checkLocation();
+    }, [user?.id, categoryParam, popularItemsY])
+  );
+
+  const handleAddToCart = (product: any) => {
+    addToCart(
+      { productId: product._id, quantity: 1 },
+      {
+        onSuccess: () => Alert.alert("Success", `${product.name} added to cart!`),
+        onError: (error: any) => {
+          Alert.alert("Error", error?.response?.data?.message || "Failed to add to cart");
+        },
+      }
+    );
+  };
+
+  // Use API products or fallback to mock
+  // We only fallback to mock if API has finished loading and returned nothing
+  const displayProducts = useMemo(() => {
+    if (isLoading && apiProducts.length === 0) return MOCK_PRODUCTS;
+    return apiProducts.length > 0 ? apiProducts : MOCK_PRODUCTS;
+  }, [apiProducts, isLoading]);
+
+  // Dynamic Categories derived from products
+  const dynamicCategories = useMemo(() => {
+    const uniqueCategories = Array.from(new Set(displayProducts.map(p => p.category).filter(Boolean)));
+    const formatted = uniqueCategories.map(cat => ({
+      id: cat.toLowerCase(),
+      name: cat.charAt(0).toUpperCase() + cat.slice(1),
+      icon: getCategoryIcon(cat)
+    }));
+    return [{ id: "all", name: "All", icon: "grid" }, ...formatted];
+  }, [displayProducts]);
+
+  // Filter products by search and category
   const filteredProducts = useMemo(() => {
-    if (!products) return [];
+    let result = displayProducts;
 
-    let filtered = products;
-
-    // filtering by category
-    if (selectedCategory !== "All") {
-      filtered = filtered.filter((product) => product.category === selectedCategory);
-    }
-
-    // filtering by searh query
-    if (searchQuery.trim()) {
-      filtered = filtered.filter((product) =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase())
+    // Filter by category
+    if (selectedCategory !== "all") {
+      result = result.filter(p =>
+        p.category?.toLowerCase().includes(selectedCategory.toLowerCase())
       );
     }
 
-    return filtered;
-  }, [products, selectedCategory, searchQuery]);
+    // Filter by search text
+    if (searchText.trim()) {
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+    return result;
+  }, [displayProducts, selectedCategory, searchText]);
+
+  const handleLocationUpdate = (zone: string, area: string, city?: string, isLive?: boolean) => {
+    setUserZone(zone);
+    setUserArea(area);
+    setUserCity(city || null);
+    setIsLiveLocation(!!isLive);
+  };
 
   return (
     <SafeScreen>
       <ScrollView
-        className="flex-1"
+        ref={scrollViewRef}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* HEADER */}
-        <View className="px-6 pb-4 pt-6">
-          <View className="flex-row items-center justify-between mb-6">
-            <View>
-              <Text className="text-text-primary text-3xl font-bold tracking-tight">Orderker</Text>
-              <Text className="text-text-secondary text-sm mt-1">Karachi's Online Bazar</Text>
+        {/* Header */}
+        <View className="bg-primary pt-4 pb-6 px-6 rounded-b-3xl shadow-lg">
+          <View className="flex-row justify-between items-center mb-5">
+            <View className="flex-1">
+              <Text className="text-purple-200 text-[10px] font-bold uppercase tracking-wider mb-1">
+                Your Location
+              </Text>
+              <TouchableOpacity
+                className="flex-row items-center"
+                onPress={() => setLocationModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={isLiveLocation ? "navigate" : "location"}
+                  size={14}
+                  color={isLiveLocation ? "#10B981" : "white"}
+                />
+                <Text className="text-white font-bold text-base ml-1" numberOfLines={1}>
+                  {!isLocationLoaded ? "Updating location..." : (isLiveLocation ? `${userArea}, ${userCity || userZone}` : `${userArea}, ${userZone}`)}
+                </Text>
+                <Ionicons name="chevron-down" size={14} color="white" style={{ marginLeft: 4 }} />
+              </TouchableOpacity>
             </View>
-
-            <TouchableOpacity className="bg-surface/50 p-3 rounded-full" activeOpacity={0.7}>
-              <Ionicons name="options-outline" size={22} color={"#fff"} />
-            </TouchableOpacity>
+            <View className="bg-white px-2.5 py-1 rounded-xl shadow-sm">
+              <Image
+                source={require("@/assets/images/orderker-logo-full.png")}
+                style={{ width: 70, height: 20 }}
+                contentFit="contain"
+              />
+            </View>
           </View>
 
-          {/* SEARCH BAR */}
-          <View className="bg-surface flex-row items-center px-5 py-4 rounded-2xl">
-            <Ionicons color={"#666"} size={22} name="search" />
-            <TextInput
-              placeholder="Search for products"
-              placeholderTextColor={"#666"}
-              className="flex-1 ml-3 text-base text-text-primary"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
+          {/* Search */}
+          <SearchInput
+            value={searchText}
+            onChangeText={setSearchText}
+            onFilterPress={() => { }}
+          />
         </View>
 
-        {/* CATEGORY FILTER */}
-        <View className="mb-6">
-          <ScrollView
+        {/* Categories Header */}
+        <View className="px-6 flex-row justify-between items-center mt-6 mb-4">
+          <Text className="text-lg font-bold text-text-primary">Categories</Text>
+          <TouchableOpacity>
+            <Text className="text-primary font-medium">See All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Categories List */}
+        <View className="mb-6 pl-6">
+          <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20 }}
-          >
-            {CATEGORIES.map((category) => {
-              const isSelected = selectedCategory === category.name;
-              return (
-                <TouchableOpacity
-                  key={category.name}
-                  onPress={() => setSelectedCategory(category.name)}
-                  className={`mr-3 rounded-2xl px-5 py-4 items-center justify-center ${isSelected ? "bg-primary" : "bg-surface"
+            data={dynamicCategories}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                className={`mr-3 px-4 py-2.5 rounded-xl flex-row items-center ${selectedCategory === item.id
+                  ? "bg-primary"
+                  : "bg-white border border-gray-100"
+                  }`}
+                onPress={() => setSelectedCategory(item.id)}
+              >
+                <Ionicons
+                  name={item.icon as any}
+                  size={18}
+                  color={selectedCategory === item.id ? "white" : "#5E2D87"}
+                />
+                <Text
+                  className={`ml-2 font-medium ${selectedCategory === item.id ? "text-white" : "text-text-primary"
                     }`}
-                  style={
-                    isSelected
-                      ? {
-                        shadowColor: "#1DB954",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 8,
-                        elevation: 6,
-                      }
-                      : undefined
-                  }
-                  activeOpacity={0.8}
                 >
-                  <Ionicons
-                    name={category.icon}
-                    size={22}
-                    color={isSelected ? "#121212" : "#fff"}
-                  />
-                  <Text
-                    className={`text-xs mt-1.5 font-semibold ${isSelected ? "text-background" : "text-text-primary"
-                      }`}
-                  >
-                    {category.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
         </View>
 
-        <View className="px-6 mb-6">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-text-primary text-lg font-bold">Products</Text>
-            <Text className="text-text-secondary text-sm">{filteredProducts.length} items</Text>
+        {/* Hero Banner Carousel */}
+        <HeroCarousel />
+
+        {/* Popular Items Header */}
+        <View
+          onLayout={(event) => setPopularItemsY(event.nativeEvent.layout.y)}
+          className="px-6 flex-row justify-between items-center mb-4"
+        >
+          <Text className="text-lg font-bold text-text-primary">Popular Items</Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/search")}>
+            <Text className="text-primary font-medium">See All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Loading / Error States */}
+        {isLoading && (
+          <View className="items-center py-8">
+            <ActivityIndicator size="large" color="#5E2D87" />
           </View>
+        )}
 
-          {/* PRODUCTS GRID */}
-          <ProductsGrid products={filteredProducts} isLoading={isLoading} isError={isError} />
+        {/* Products Grid */}
+        {!isLoading && filteredProducts.length === 0 && (
+          <View className="items-center py-8 px-6">
+            <Ionicons name="search-outline" size={48} color="#9CA3AF" />
+            <Text className="text-text-secondary text-center mt-4">No products found matching "{searchText || selectedCategory}"</Text>
+          </View>
+        )}
+
+        <View className="px-6 flex-row flex-wrap justify-between">
+          {filteredProducts.map((item) => (
+            <View key={item._id} className="w-[48%] mb-4">
+              <ProductCard
+                title={item.name}
+                price={item.price}
+                rating={item.averageRating}
+                reviews={item.totalReviews}
+                image={item.images?.[0] || "https://via.placeholder.com/150"}
+                isLiked={isInWishlist(item._id)}
+                onWishlistToggle={() => toggleWishlist(item._id)}
+                isWishlistLoading={isAddingToWishlist || isRemovingFromWishlist}
+                onAdd={() => handleAddToCart(item)}
+                isAddingToCart={isAddingToCart}
+                onPress={() => router.push(`/product/${item._id}`)}
+              />
+            </View>
+          ))}
         </View>
+
       </ScrollView>
+
+      {/* Location Selection Modal */}
+      <LocationSelectionModal
+        visible={locationModalVisible}
+        onClose={() => setLocationModalVisible(false)}
+        currentZone={userZone}
+        currentArea={userArea}
+        currentCity={userCity}
+        isLive={isLiveLocation}
+        onLocationUpdate={handleLocationUpdate}
+      />
     </SafeScreen>
   );
-};
-
-export default ShopScreen;
+}

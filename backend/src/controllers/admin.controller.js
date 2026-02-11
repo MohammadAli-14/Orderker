@@ -124,6 +124,24 @@ export async function updateOrderStatus(req, res) {
       return res.status(404).json({ error: "Order not found" });
     }
 
+    // If transitioning to cancelled, restore stock
+    if (status === "cancelled" && order.status !== "cancelled") {
+      for (const item of order.orderItems) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: item.quantity },
+        });
+      }
+    }
+
+    // If transitioning BACK from cancelled to a valid state
+    if (["pending", "shipped", "delivered"].includes(status) && order.status === "cancelled") {
+      for (const item of order.orderItems) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: -item.quantity },
+        });
+      }
+    }
+
     order.status = status;
 
     if (status === "shipped" && !order.shippedAt) {

@@ -61,19 +61,19 @@ const ProductDetailScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          className={`w-12 h-12 rounded-full items-center justify-center ${isInWishlist(product._id) ? "bg-primary" : "bg-black/50 backdrop-blur-xl"
+          className={`w-12 h-12 rounded-full items-center justify-center ${isInWishlist(product._id) ? "bg-white" : "bg-black/50 backdrop-blur-xl"
             }`}
           onPress={() => toggleWishlist(product._id)}
           disabled={isAddingToWishlist || isRemovingFromWishlist}
           activeOpacity={0.7}
         >
           {isAddingToWishlist || isRemovingFromWishlist ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color="#5E2D87" />
           ) : (
             <Ionicons
               name={isInWishlist(product._id) ? "heart" : "heart-outline"}
               size={24}
-              color={isInWishlist(product._id) ? "#121212" : "#FFFFFF"}
+              color={isInWishlist(product._id) ? "#EF4444" : "#FFFFFF"}
             />
           )}
         </TouchableOpacity>
@@ -166,13 +166,13 @@ const ProductDetailScreen = () => {
                 activeOpacity={0.7}
                 disabled={!inStock}
               >
-                <Ionicons name="remove" size={24} color={inStock ? "#FFFFFF" : "#666"} />
+                <Ionicons name="remove" size={24} color={inStock ? "#1F2937" : "#9CA3AF"} />
               </TouchableOpacity>
 
               <Text className="text-text-primary text-xl font-bold mx-6">{quantity}</Text>
 
               <TouchableOpacity
-                className="bg-primary rounded-full w-12 h-12 items-center justify-center"
+                className="bg-primary rounded-full w-12 h-12 items-center justify-center shadow-sm"
                 onPress={() => setQuantity(Math.min(product.stock, quantity + 1))}
                 activeOpacity={0.7}
                 disabled={!inStock || quantity >= product.stock}
@@ -180,7 +180,7 @@ const ProductDetailScreen = () => {
                 <Ionicons
                   name="add"
                   size={24}
-                  color={!inStock || quantity >= product.stock ? "#666" : "#121212"}
+                  color="white"
                 />
               </TouchableOpacity>
             </View>
@@ -246,10 +246,10 @@ function ErrorUI() {
           This product may have been removed or doesn&apos;t exist
         </Text>
         <TouchableOpacity
-          className="bg-primary rounded-2xl px-6 py-3 mt-6"
+          className="bg-[#5E2D87] rounded-2xl px-6 py-3 mt-6"
           onPress={() => router.back()}
         >
-          <Text className="text-background font-bold">Go Back</Text>
+          <Text className="text-white font-bold">Go Back</Text>
         </TouchableOpacity>
       </View>
     </SafeScreen>
@@ -260,8 +260,8 @@ function LoadingUI() {
   return (
     <SafeScreen>
       <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color="#1DB954" />
-        <Text className="text-text-secondary mt-4">Loading product...</Text>
+        <ActivityIndicator size="large" color="#5E2D87" />
+        <Text className="text-gray-500 mt-4">Loading product details...</Text>
       </View>
     </SafeScreen>
   );
