@@ -3,11 +3,16 @@ import axios from "axios";
 import { useEffect } from "react";
 
 // For local development with physical device (change to your laptop's IP):
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.18.89:3000/api";
+// const API_URL = "http://192.168.18.89:3000/api";
+
+// For local development with simulator:
+// const API_URL = "http://localhost:3000/api";
+
+// Use your deployed backend URL for production/remote testing
+const API_URL = "https://orderker.onrender.com/api";
 
 const api = axios.create({
-  baseURL: API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`,
-  timeout: 10000,
+  baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
