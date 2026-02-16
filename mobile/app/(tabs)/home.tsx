@@ -20,18 +20,35 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { calculateFinalPrice, formatCurrency } from "@/lib/utils";
 
-// Icon mapping for dynamic categories
-const getCategoryIcon = (category: string) => {
+// Category images mapping
+const CATEGORY_IMAGES: Record<string, any> = {
+    dairy: require("@/assets/categories/dairy.png"),
+    beverages: require("@/assets/categories/beverages.png"),
+    food: require("@/assets/categories/food.png"),
+    fruits: require("@/assets/categories/fruits.png"),
+    vegetables: require("@/assets/categories/vegetables.png"),
+    snacks: require("@/assets/categories/snacks.png"),
+    hygiene: require("@/assets/categories/hygiene.png"),
+    masalay: require("@/assets/categories/masalay.png"),
+    household: require("@/assets/categories/household.png"),
+    staple: require("@/assets/categories/staple.png"),
+    all: require("@/assets/categories/default.png"),
+    default: require("@/assets/categories/default.png"),
+};
+
+const getCategoryImage = (category: string) => {
     const cat = category.toLowerCase();
-    if (cat.includes("dairy") || cat.includes("milk")) return "water";
-    if (cat.includes("snack") || cat.includes("chips")) return "fast-food";
-    if (cat.includes("bev") || cat.includes("drink") || cat.includes("juice")) return "wine";
-    if (cat.includes("fruit") || cat.includes("phal")) return "nutrition";
-    if (cat.includes("veg") || cat.includes("sabzi")) return "leaf";
-    if (cat.includes("fresh")) return "leaf";
-    if (cat.includes("food")) return "restaurant";
-    if (cat.includes("hygiene") || cat.includes("wash") || cat.includes("clean") || cat.includes("personal")) return "medkit";
-    return "grid"; // Default icon
+    if (cat.includes("dairy") || cat.includes("milk")) return CATEGORY_IMAGES.dairy;
+    if (cat.includes("snack") || cat.includes("chips")) return CATEGORY_IMAGES.snacks;
+    if (cat.includes("bev") || cat.includes("drink") || cat.includes("juice")) return CATEGORY_IMAGES.beverages;
+    if (cat.includes("fruit") || cat.includes("phal")) return CATEGORY_IMAGES.fruits;
+    if (cat.includes("veg") || cat.includes("sabzi")) return CATEGORY_IMAGES.vegetables;
+    if (cat.includes("food")) return CATEGORY_IMAGES.food;
+    if (cat.includes("hygiene") || cat.includes("wash") || cat.includes("clean") || cat.includes("personal")) return CATEGORY_IMAGES.hygiene;
+    if (cat.includes("masala") || cat.includes("spice")) return CATEGORY_IMAGES.masalay;
+    if (cat.includes("house") || cat.includes("clean")) return CATEGORY_IMAGES.household;
+    if (cat.includes("staple") || cat.includes("grain") || cat.includes("atta") || cat.includes("rice")) return CATEGORY_IMAGES.staple;
+    return CATEGORY_IMAGES.default;
 };
 
 import { Product } from "@/types";
@@ -283,9 +300,9 @@ export default function HomeScreen() {
         const formatted = uniqueCategories.map(cat => ({
             id: cat.toLowerCase(),
             name: cat.charAt(0).toUpperCase() + cat.slice(1),
-            icon: getCategoryIcon(cat)
+            image: getCategoryImage(cat)
         }));
-        return [{ id: "all", name: "All", icon: "grid" }, ...formatted];
+        return [{ id: "all", name: "All", image: CATEGORY_IMAGES.all }, ...formatted];
     }, [displayProducts]);
 
     // Current active category (from URL or 'all')
@@ -402,7 +419,7 @@ export default function HomeScreen() {
                     <View className="bg-white -mt-6 rounded-t-[32px] pt-6 pb-2">
                         <View className="px-6 flex-row justify-between items-center mb-4">
                             <Text className="text-base font-bold text-text-primary">Categories</Text>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => router.push("/(tabs)/search")}>
                                 <Text className="text-primary text-xs font-medium">See All</Text>
                             </TouchableOpacity>
                         </View>
@@ -422,16 +439,22 @@ export default function HomeScreen() {
                                         onPress={() => router.setParams({ category: item.id })}
                                     >
                                         <View
-                                            className="w-14 h-14 rounded-full items-center justify-center border"
+                                            className="w-16 h-16 rounded-3xl items-center justify-center border overflow-hidden"
                                             style={{
-                                                backgroundColor: isSelected ? "#5E2D87" : "#F9FAFB",
+                                                backgroundColor: isSelected ? "white" : "#F9FAFB",
                                                 borderColor: isSelected ? "#5E2D87" : "#F3F4F6",
+                                                borderWidth: isSelected ? 2 : 1,
+                                                shadowColor: isSelected ? "#5E2D87" : "#000",
+                                                shadowOffset: { width: 0, height: 4 },
+                                                shadowOpacity: isSelected ? 0.2 : 0.05,
+                                                shadowRadius: 8,
+                                                elevation: isSelected ? 4 : 2,
                                             }}
                                         >
-                                            <Ionicons
-                                                name={item.icon as any}
-                                                size={24}
-                                                color={isSelected ? "white" : "#5E2D87"}
+                                            <Image
+                                                source={item.image}
+                                                style={{ width: 44, height: 44 }}
+                                                contentFit="contain"
                                             />
                                         </View>
                                         <Text

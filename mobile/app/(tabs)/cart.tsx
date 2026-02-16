@@ -48,7 +48,7 @@ const CartScreen = () => {
   const [clearCartVisible, setClearCartVisible] = useState(false);
   const [itemToRemove, setItemToRemove] = useState<{ id: string; name: string } | null>(null);
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Stripe");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
   const { showToast } = useToast();
 
   const cartItems = cart?.items || [];
@@ -329,7 +329,7 @@ const CartScreen = () => {
         <View className="px-6 mt-8">
           <Text className="text-text-primary text-lg font-bold mb-4">Payment Method</Text>
           <View className="flex-row flex-wrap justify-between">
-            {(["Stripe", "COD", "Easypaisa", "JazzCash"] as PaymentMethod[]).map((method) => (
+            {(["COD", "Easypaisa", "JazzCash"] as PaymentMethod[]).map((method) => (
               <TouchableOpacity
                 key={method}
                 className={`w-[48%] p-4 rounded-2xl border mb-4 items-center justify-center ${paymentMethod === method
