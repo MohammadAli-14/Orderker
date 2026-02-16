@@ -1,6 +1,75 @@
 @import "tailwindcss";
+
 @plugin "daisyui" {
-  themes: forest;
+  themes: light --default;
+}
+
+@theme {
+  --color-primary: #5E2D87;
+  --color-primary-light: #7A4AA3;
+  --color-primary-dark: #4A226A;
+  --color-primary-content: #ffffff;
+
+  --color-secondary: #8B5CF6;
+  --color-secondary-content: #ffffff;
+
+  --color-background: #F9FAFB;
+  --color-background-dark: #121212;
+
+  --color-surface: #FFFFFF;
+  --color-surface-dark: #1E1E1E;
+
+  --font-sans: "Inter", "system-ui", "sans-serif";
+  --font-mono: "Fira Code", "monospace";
+  --font-technical: "Fira Sans", "system-ui", "sans-serif";
+}
+
+/* Custom Utilities for Admin Panel */
+@layer utilities {
+  .bg-primary-gradient {
+    @apply bg-gradient-to-br from-[#5E2D87] to-[#8B5CF6];
+  }
+
+  .text-primary-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#5E2D87] to-[#8B5CF6];
+  }
+
+  .glass-card {
+    @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-xl;
+  }
+
+  .glass-navbar {
+    @apply backdrop-blur-lg bg-white/80 border-b border-gray-200/50;
+  }
+
+  .text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* Override DaisyUI variables for the default theme to match brand */
+:root {
+  --p: 272 50% 35%;
+  /* Primary: #5E2D87 (HSL approx) */
+  --pc: 0 0% 100%;
+  /* Primary Content: White */
+
+  --s: 258 90% 66%;
+  /* Secondary: #8B5CF6 */
+  --sc: 0 0% 100%;
+  /* Secondary Content: White */
+
+  --b1: 0 0% 100%;
+  /* Base 100: White */
+  --b2: 210 20% 98%;
+  /* Base 200: F9FAFB */
+  --b3: 220 13% 91%;
+  /* Base 300: E5E7EB */
+  --bc: 215 28% 17%;
+  /* Base Content: Slate-900 */
+
+  --rounded-box: 1rem;
+  --rounded-btn: 0.5rem;
 }
 
 /* Hero Animation Keyframes */
@@ -9,6 +78,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -18,25 +88,78 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
+    transform: translateY(10px);
   }
+
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @keyframes fadeInScale {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
   }
 }
 
-/* Respect user's motion preferences */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-12px) rotate(1deg);
+  }
+}
+
+@keyframes pulse-soft {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+@layer base {
+  body {
+    @apply font-technical text-slate-900;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-technical font-bold tracking-tight;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -44,4 +167,52 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Leaflet Attribution Polish - Ultra Minimal Ghost Mode */
+.leaflet-container .leaflet-control-attribution {
+  font-size: 8px !important;
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 8px !important;
+  margin: 0 !important;
+  transition: all 1s;
+  opacity: 0.05;
+  transform: scale(0.95);
+  transform-origin: bottom right;
+  box-shadow: none !important;
+  font-family: var(--font-technical);
+}
+
+.leaflet-container .leaflet-control-attribution:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(24px);
+  transform: scale(1);
+  border-top-left-radius: 1rem;
+  padding: 4px 16px !important;
+  border-top: 1px solid #f1f5f9;
+  border-left: 1px solid #f1f5f9;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  color: #475569 !important;
+}
+
+.leaflet-container .leaflet-control-attribution a {
+  color: #94a3b833 !important;
+  transition: color 0.2s;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  text-decoration: none !important;
+}
+
+.leaflet-container .leaflet-control-attribution a:hover {
+  color: #5E2D87 !important;
+}
+
+.leaflet-container .leaflet-control-attribution:hover a {
+  color: #5E2D87 !important;
+}
+
+.leaflet-container {
+  font-family: var(--font-technical) !important;
 }

@@ -8,6 +8,7 @@ import useCart from "@/hooks/useCart";
 import useWishlist from "@/hooks/useWishlist";
 import { ProductCard } from "@/components/ProductCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useToast } from "@/context/ToastContext";
 
 const POPULAR_CATEGORIES = [
     { id: "dairy", name: "Dairy", icon: "water-outline" },
@@ -26,6 +27,7 @@ export default function SearchScreen() {
     const { data: products = [], isLoading } = useProducts();
     const { addToCart, isAddingToCart } = useCart();
     const { isInWishlist, toggleWishlist, isAddingToWishlist, isRemovingFromWishlist } = useWishlist();
+    const { showToast } = useToast();
 
     // Load recent searches on focus
     const loadRecentSearches = useCallback(async () => {
@@ -84,9 +86,17 @@ export default function SearchScreen() {
         addToCart(
             { productId: product._id, quantity: 1 },
             {
-                onSuccess: () => Alert.alert("Success", `${product.name} added to cart!`),
+                onSuccess: () => showToast({
+                    title: "Success",
+                    message: `${product.name} added to cart!`,
+                    type: "success"
+                }),
                 onError: (error: any) => {
-                    Alert.alert("Error", error?.response?.data?.message || "Failed to add to cart");
+                    showToast({
+                        title: "Error",
+                        message: error?.response?.data?.message || "Failed to add to cart",
+                        type: "error"
+                    });
                 },
             }
         );
@@ -130,11 +140,11 @@ export default function SearchScreen() {
 
                 {/* Content */}
                 {searchText.trim() ? (
-                    <View className="px-6 mt-4">
-                        <Text className="text-lg font-bold text-text-primary mb-4">Results</Text>
+                    <View className="px-4 mt-4">
+                        <Text className="text-lg font-bold text-text-primary mb-4 px-2">Results</Text>
                         <View className="flex-row flex-wrap justify-between">
                             {filteredProducts.map((item) => (
-                                <View key={item._id} className="w-[48%] mb-4">
+                                <View key={item._id} className="w-[31.5%] mb-3">
                                     <ProductCard
                                         title={item.name}
                                         price={item.price}
@@ -147,6 +157,9 @@ export default function SearchScreen() {
                                         onAdd={() => handleAddToCart(item)}
                                         isAddingToCart={isAddingToCart}
                                         onPress={() => router.push(`/product/${item._id}`)}
+                                        isFlashSale={item.isFlashSale}
+                                        discountPercent={item.discountPercent}
+                                        compact={true}
                                     />
                                 </View>
                             ))}
@@ -228,6 +241,8 @@ export default function SearchScreen() {
                                                 onAdd={() => handleAddToCart(item)}
                                                 isAddingToCart={isAddingToCart}
                                                 onPress={() => router.push(`/product/${item._id}`)}
+                                                isFlashSale={item.isFlashSale}
+                                                discountPercent={item.discountPercent}
                                             />
                                         </View>
                                     ))}

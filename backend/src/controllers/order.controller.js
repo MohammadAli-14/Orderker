@@ -7,7 +7,6 @@ export async function createOrder(req, res) {
     const user = req.user;
     const { orderItems, shippingAddress, paymentResult, totalPrice, paymentMethod, paymentProof } = req.body;
 
-    console.log(`Creating order for user ${user.clerkId} with method: ${paymentMethod}`);
     if (paymentProof) {
       console.log(`Payment Proof received: TxnID: ${paymentProof.transactionId}, URL: ${paymentProof.receiptUrl}`);
     }
@@ -67,8 +66,15 @@ export async function createOrder(req, res) {
 
     res.status(201).json({ message: "Order created successfully", order });
   } catch (error) {
-    console.error("Error in createOrder controller:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("❌ Order Creation Error:", {
+      message: error.message,
+      name: error.name,
+      errors: error.errors ? Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message
+      })) : null
+    });
+    res.status(500).json({ error: "Internal server error", details: error.message });
   }
 }
 
@@ -178,6 +184,34 @@ export async function updateOrderPaymentProof(req, res) {
     res.status(200).json({ message: "Payment proof updated successfully", order });
   } catch (error) {
     console.error("Error in updateOrderPaymentProof:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export async function getUserDashboardKPI(req, res) {
+  try {
+    const clerkId = req.user.clerkId;
+
+    const [totalOrders, deliveredOrders, pendingOrders, spentResult] = await Promise.all([
+      Order.countDocuments({ clerkId, status: { $ne: "cancelled" } }),
+      Order.countDocuments({ clerkId, status: "delivered" }),
+      Order.countDocuments({ clerkId, status: "pending" }),
+      Order.aggregate([
+        { $match: { clerkId, status: { $ne: "cancelled" } } },
+        { $group: { _id: null, total: { $sum: "$totalPrice" } } },
+      ]),
+    ]);
+
+    const totalSpent = spentResult.length > 0 ? spentResult[0].total : 0;
+
+    res.status(200).json({
+      totalOrders,
+      totalSpent,
+      deliveredOrders,
+      pendingOrders,
+    });
+  } catch (error) {
+    console.error("Error in getUserDashboardKPI:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 }

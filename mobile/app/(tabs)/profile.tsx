@@ -6,16 +6,18 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { useProfile } from "@/hooks/useProfile";
 
 const MENU_ITEMS = [
   { id: 1, icon: "bag-outline", title: "Orders", color: "#10B981", action: "/orders" },
   { id: 2, icon: "map-outline", title: "Addresses", color: "#F59E0B", action: "/addresses" },
-  { id: 3, icon: "heart-outline", title: "Wishlist", color: "#EF4444", action: "/wishlist" },
+  { id: 3, icon: "heart-outline", title: "Wishlist", color: "#EF4444", action: "/(tabs)/wishlist" },
 ] as const;
 
 const ProfileScreen = () => {
   const { signOut } = useAuth();
   const { user } = useUser();
+  const { profile } = useProfile();
 
   const handleMenuPress = (action: (typeof MENU_ITEMS)[number]["action"]) => {
     router.push(action);
@@ -30,12 +32,16 @@ const ProfileScreen = () => {
       >
         {/* HEADER */}
         <View className="px-6 pb-6">
-          <View className="bg-surface rounded-3xl p-6">
+          <TouchableOpacity
+            className="bg-surface rounded-3xl p-6"
+            activeOpacity={0.9}
+            onPress={() => router.push("/account-info" as any)}
+          >
             <View className="flex-row items-center">
               <View className="relative">
                 <View
                   style={{
-                    shadowColor: "#1DB954",
+                    shadowColor: profile?.isPhoneVerified ? "#1DB954" : "#F59E0B",
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.3,
                     shadowRadius: 12,
@@ -43,29 +49,46 @@ const ProfileScreen = () => {
                   }}
                 >
                   <Image
-                    source={user?.imageUrl}
-                    style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: "#5E2D87" }}
+                    source={profile?.imageUrl || user?.imageUrl}
+                    style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: profile?.isPhoneVerified ? "#1DB954" : "#F59E0B" }}
                     transition={200}
                   />
                 </View>
-                <View className="absolute -bottom-1 -right-1 bg-primary rounded-full size-7 items-center justify-center border-2 border-surface">
-                  <Ionicons name="checkmark" size={16} color="white" />
+                <View
+                  className="absolute -bottom-1 -right-1 rounded-full size-7 items-center justify-center border-2 border-surface"
+                  style={{ backgroundColor: profile?.isPhoneVerified ? "#1DB954" : "#F59E0B" }}
+                >
+                  <Ionicons
+                    name={profile?.isPhoneVerified ? "checkmark" : "time-outline"}
+                    size={profile?.isPhoneVerified ? 16 : 18}
+                    color="white"
+                  />
                 </View>
               </View>
 
               <View className="flex-1 ml-4">
                 <Text className="text-text-primary text-2xl font-bold mb-1">
-                  {user?.firstName} {user?.lastName}
+                  {profile?.name || (user?.firstName ? `${user.firstName} ${user.lastName}` : "Valued Customer")}
                 </Text>
                 <Text className="text-text-secondary text-sm mb-2">
-                  {user?.emailAddresses?.[0]?.emailAddress || "No email"}
+                  {profile?.email || user?.emailAddresses?.[0]?.emailAddress || "No email"}
                 </Text>
-                <View className="bg-primary/20 self-start px-3 py-1 rounded-full">
-                  <Text className="text-primary text-xs font-semibold">Verified Member</Text>
+                <View
+                  className="self-start px-3 py-1 rounded-full"
+                  style={{ backgroundColor: profile?.isPhoneVerified ? "#1DB95420" : "#F59E0B20" }}
+                >
+                  <Text
+                    className="text-xs font-semibold"
+                    style={{ color: profile?.isPhoneVerified ? "#1DB954" : "#F59E0B" }}
+                  >
+                    {profile?.isPhoneVerified ? "Verified Member" : "Not Verified"}
+                  </Text>
                 </View>
               </View>
+
+              <Ionicons name="chevron-forward" size={20} color="#6B7280" />
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* MENU ITEMS */}

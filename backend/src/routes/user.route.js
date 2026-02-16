@@ -8,12 +8,18 @@ import {
   removeFromWishlist,
   updateAddress,
   syncUserRole,
+  getProfile,
+  updateProfile,
 } from "../controllers/user.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
 router.use(protectRoute);
+
+// profile routes
+router.get("/me", getProfile);
+router.put("/me", updateProfile);
 
 // address routes
 router.post("/addresses", addAddress);

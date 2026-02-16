@@ -1,39 +1,53 @@
 import { UserButton } from "@clerk/clerk-react";
 import { useLocation } from "react-router";
+import { MenuIcon } from "lucide-react";
 
-import {
-  ClipboardListIcon,
-  HomeIcon,
-  PanelLeftIcon,
-  ShoppingBagIcon,
-  UsersIcon,
-} from "lucide-react";
+function Navbar({ onToggleSidebar }) {
+  const { pathname } = useLocation();
 
-// eslint-disable-next-line
-export const NAVIGATION = [
-  { name: "Dashboard", path: "/dashboard", icon: <HomeIcon className="size-5" /> },
-  { name: "Products", path: "/products", icon: <ShoppingBagIcon className="size-5" /> },
-  { name: "Orders", path: "/orders", icon: <ClipboardListIcon className="size-5" /> },
-  { name: "Customers", path: "/customers", icon: <UsersIcon className="size-5" /> },
-];
-
-function Navbar() {
-  const location = useLocation();
+  // Helper to get title from path
+  const getPageTitle = (path) => {
+    switch (path) {
+      case "/": return "Dashboard";
+      case "/products": return "Product Management";
+      case "/orders": return "Order Management";
+      case "/customers": return "Customer Overview";
+      case "/analytics": return "Analytics & Reports";
+      default: return "Dashboard";
+    }
+  };
 
   return (
-    <div className="navbar w-full bg-base-300">
-      <label htmlFor="my-drawer" className="btn btn-square btn-ghost" aria-label="open sidebar">
-        <PanelLeftIcon className="size-5" />
-      </label>
+    <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-base-300 px-4 md:px-8 py-4 flex items-center justify-between transition-all duration-300">
+      <div className="flex items-center gap-3">
+        {/* Mobile Toggle Button */}
+        <button
+          onClick={onToggleSidebar}
+          className="md:hidden p-2 -ml-2 text-gray-400 hover:text-primary transition-colors"
+        >
+          <MenuIcon className="size-6" />
+        </button>
 
-      <div className="flex-1 px-4">
-        <h1 className="text-xl font-bold">
-          {NAVIGATION.find((item) => item.path === location.pathname)?.name || "Dashboard"}
-        </h1>
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold text-base-content tracking-tight">
+            {getPageTitle(pathname)}
+          </h1>
+          <p className="text-[10px] md:text-xs text-base-content/50 font-medium">
+            Welcome back, Admin
+          </p>
+        </div>
       </div>
 
-      <div className="mr-5">
-        <UserButton />
+      <div className="flex items-center gap-4">
+        <div className="divider divider-horizontal mx-0 h-8 opacity-20 hidden md:flex"></div>
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: "size-8 md:size-10 ring-2 ring-primary/20 hover:ring-primary transition-all duration-300",
+              userButtonPopoverCard: "shadow-xl border border-base-200"
+            }
+          }}
+        />
       </div>
     </div>
   );

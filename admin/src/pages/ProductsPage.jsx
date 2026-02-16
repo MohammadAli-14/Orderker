@@ -13,6 +13,8 @@ function ProductsPage() {
     price: "",
     stock: "",
     description: "",
+    isFlashSale: false,
+    discountPercent: 0,
   });
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
@@ -60,6 +62,8 @@ function ProductsPage() {
       price: "",
       stock: "",
       description: "",
+      isFlashSale: false,
+      discountPercent: 0,
     });
     setImages([]);
     setImagePreviews([]);
@@ -73,6 +77,8 @@ function ProductsPage() {
       price: product.price.toString(),
       stock: product.stock.toString(),
       description: product.description,
+      isFlashSale: product.isFlashSale || false,
+      discountPercent: product.discountPercent || 0,
     });
     setImagePreviews(product.images);
     setShowModal(true);
@@ -105,6 +111,8 @@ function ProductsPage() {
     formDataToSend.append("price", formData.price);
     formDataToSend.append("stock", formData.stock);
     formDataToSend.append("category", formData.category);
+    formDataToSend.append("isFlashSale", formData.isFlashSale);
+    formDataToSend.append("discountPercent", formData.discountPercent);
 
     // only append new images if they were selected
     if (images.length > 0) images.forEach((image) => formDataToSend.append("images", image));
@@ -136,53 +144,66 @@ function ProductsPage() {
           const status = getStockStatusBadge(product.stock);
 
           return (
-            <div key={product._id} className="card bg-base-100 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-              <div className="card-body">
-                <div className="flex items-center gap-6">
-                  <div className="avatar">
-                    <div className="w-20 rounded-xl">
-                      <img src={product.images[0]} alt={product.name} />
-                    </div>
+            <div key={product._id} className="glass-card rounded-2xl p-6 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <div className="avatar">
+                  <div className="w-full sm:w-24 h-48 sm:h-24 rounded-xl">
+                    <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
                   </div>
+                </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="card-title text-base sm:text-lg truncate">{product.name}</h3>
+                <div className="flex-1 min-w-0 w-full text-center sm:text-left">
+                  <div className="flex flex-row justify-between items-start gap-4">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="card-title text-lg sm:text-xl truncate justify-center sm:justify-start">{product.name}</h3>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         <p className="text-base-content/70 text-sm">{product.category}</p>
+                        {product.isFlashSale && (
+                          <div className="badge badge-error border-none font-black text-[9px] px-1.5 py-0 h-4">⚡ FLASH SALE</div>
+                        )}
                       </div>
-                      <div className={`badge ${status.class} shrink-0`}>{status.text}</div>
                     </div>
-                    <div className="flex items-center gap-6 mt-4">
-                      <div>
-                        <p className="text-xs text-base-content/70">Price</p>
-                        <p className="font-bold text-lg">{formatCurrency(product.price)}</p>
+                    <div className={`badge ${status.class} shrink-0 whitespace-nowrap`}>{status.text}</div>
+                  </div>
+                  <div className="flex items-center justify-center sm:justify-start gap-8 mt-4 bg-base-200/50 p-3 rounded-lg sm:bg-transparent sm:p-0">
+                    <div>
+                      <p className="text-xs text-base-content/70 uppercase tracking-wide">Price</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-black text-xl text-primary">
+                          {formatCurrency(product.isFlashSale ? Math.round(product.price * (1 - (product.discountPercent || 0) / 100)) : product.price)}
+                        </p>
+                        {product.isFlashSale && (
+                          <p className="text-xs text-base-content/50 line-through">
+                            {formatCurrency(product.price)}
+                          </p>
+                        )}
                       </div>
-                      <div>
-                        <p className="text-xs text-base-content/70">Stock</p>
-                        <p className="font-bold text-lg">{product.stock} units</p>
-                      </div>
+                    </div>
+                    <div className="w-px h-8 bg-base-300 sm:hidden"></div>
+                    <div>
+                      <p className="text-xs text-base-content/70 uppercase tracking-wide">Stock</p>
+                      <p className="font-bold text-lg">{product.stock} units</p>
                     </div>
                   </div>
+                </div>
 
-                  <div className="card-actions">
-                    <button
-                      className="btn btn-square btn-ghost"
-                      onClick={() => handleEdit(product)}
-                    >
-                      <PencilIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      className="btn btn-square btn-ghost text-error"
-                      onClick={() => deleteProductMutation.mutate(product._id)}
-                    >
-                      {deleteProductMutation.isPending ? (
-                        <span className="loading loading-spinner"></span>
-                      ) : (
-                        <Trash2Icon className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
+                <div className="card-actions">
+                  <button
+                    className="btn btn-square btn-ghost"
+                    onClick={() => handleEdit(product)}
+                  >
+                    <PencilIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    className="btn btn-square btn-ghost text-error"
+                    onClick={() => deleteProductMutation.mutate(product._id)}
+                  >
+                    {deleteProductMutation.isPending ? (
+                      <span className="loading loading-spinner"></span>
+                    ) : (
+                      <Trash2Icon className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -192,10 +213,10 @@ function ProductsPage() {
 
       {/* ADD/EDIT PRODUCT MODAL */}
 
-      <input type="checkbox" className="modal-toggle" checked={showModal} />
+      <input type="checkbox" className="modal-toggle" checked={showModal} readOnly />
 
       <div className="modal">
-        <div className="modal-box max-w-2xl">
+        <div className="modal-box max-w-2xl p-8 rounded-3xl backdrop-blur-3xl bg-white/90 border border-white/40 shadow-2xl">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-2xl">
               {editingProduct ? "Edit Product" : "Add New Product"}
@@ -276,6 +297,56 @@ function ProductsPage() {
                   required
                 />
               </div>
+            </div>
+
+            {/* FLASH SALE SECTION */}
+            <div className="p-4 bg-error/5 rounded-xl border border-error/10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-error/20 flex items-center justify-center">
+                    <span className="text-lg">⚡</span>
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm">Flash Sale</p>
+                    <p className="text-[10px] text-base-content/60">Apply discount to this product</p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  className="toggle toggle-error"
+                  checked={formData.isFlashSale}
+                  onChange={(e) => setFormData({ ...formData, isFlashSale: e.target.checked })}
+                />
+              </div>
+
+              {formData.isFlashSale && (
+                <div className="grid grid-cols-2 gap-4 animate-fadeIn">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="text-xs font-semibold">Discount Percent (%)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      placeholder="50"
+                      className="input input-sm input-bordered border-error/20 focus:border-error"
+                      value={formData.discountPercent}
+                      onChange={(e) => setFormData({ ...formData, discountPercent: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="text-xs font-semibold">Sale Price Preview</span>
+                    </label>
+                    <div className="h-10 px-3 flex items-center bg-error/10 rounded-lg border border-error/20">
+                      <span className="font-black text-error">
+                        {formatCurrency(Math.round(Number(formData.price) * (1 - (formData.discountPercent || 0) / 100)))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="form-control flex flex-col gap-2">

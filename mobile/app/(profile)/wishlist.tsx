@@ -1,14 +1,16 @@
 import SafeScreen from "@/components/SafeScreen";
 import useCart from "@/hooks/useCart";
 import useWishlist from "@/hooks/useWishlist";
-import { formatCurrency } from "@/lib/utils";
+import { calculateFinalPrice, formatCurrency } from "@/lib/utils";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useFocusEffect } from "expo-router";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import GradientButton from "@/components/GradientButton";
 import { WishlistItemSkeleton } from "@/components/Skeleton";
+import { useToast } from "@/context/ToastContext";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 function WishlistScreen() {
   const { wishlist, isLoading, isError, removeFromWishlist, wishlistCount, isRemovingFromWishlist } =
@@ -16,6 +18,8 @@ function WishlistScreen() {
 
   const { addToCart, isAddingToCart } = useCart();
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [removeModalVisible, setRemoveModalVisible] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState<{ id: string; name: string } | null>(null);
 
   const handleBrowseProducts = () => {
     setIsRedirecting(true);
@@ -31,23 +35,27 @@ function WishlistScreen() {
   );
 
   const handleRemove = (productId: string, productName: string) => {
-    Alert.alert("Remove from wishlist", `Are you sure you want to remove ${productName}?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: () => removeFromWishlist(productId),
-      },
-    ]);
+    setItemToRemove({ id: productId, name: productName });
+    setRemoveModalVisible(true);
   };
+
+  const { showToast } = useToast();
 
   const handleAddToCart = (productId: string, productName: string) => {
     addToCart(
       { productId, quantity: 1 },
       {
-        onSuccess: () => Alert.alert("Success", `${productName} added to cart!`),
+        onSuccess: () => showToast({
+          title: "Success",
+          message: `${productName} added to cart!`,
+          type: "success"
+        }),
         onError: (error: any) => {
-          Alert.alert("Error", error?.response?.data?.error || "Failed to add to cart");
+          showToast({
+            title: "Error",
+            message: error?.response?.data?.error || "Failed to add to cart",
+            type: "error"
+          });
         },
       }
     );
@@ -128,6 +136,11 @@ function WishlistScreen() {
                           {item.stock > 0 ? `${item.stock} in stock` : "Out of stock"}
                         </Text>
                       </View>
+                      {item.isFlashSale && (
+                        <View className="bg-red-500 px-1.5 py-0.5 rounded-md mt-1 self-start">
+                          <Text className="text-white text-[8px] font-black italic">⚡ FLASH</Text>
+                        </View>
+                      )}
                     </View>
                     <TouchableOpacity
                       onPress={() => handleRemove(item._id, item.name)}
@@ -141,9 +154,16 @@ function WishlistScreen() {
                       )}
                     </TouchableOpacity>
                   </View>
-                  <Text className="text-xl font-bold text-primary">
-                    {formatCurrency(item.price)}
-                  </Text>
+                  <View>
+                    <Text className="text-xl font-bold text-primary">
+                      {formatCurrency(calculateFinalPrice(item.price, item.isFlashSale, item.discountPercent || 0))}
+                    </Text>
+                    {item.isFlashSale && (item.discountPercent || 0) > 0 && (
+                      <Text className="text-text-secondary text-xs line-through">
+                        {formatCurrency(item.price)}
+                      </Text>
+                    )}
+                  </View>
                 </View>
               </View>
 
@@ -168,6 +188,30 @@ function WishlistScreen() {
           ))}
         </ScrollView>
       )}
+
+      <ConfirmModal
+        visible={removeModalVisible}
+        onClose={() => setRemoveModalVisible(false)}
+        onConfirm={() => {
+          if (itemToRemove) {
+            removeFromWishlist(itemToRemove.id, {
+              onSuccess: () => {
+                setRemoveModalVisible(false);
+                showToast({
+                  title: "Removed",
+                  message: `${itemToRemove.name} removed from wishlist`,
+                  type: "success"
+                });
+              }
+            });
+          }
+        }}
+        title="Remove from wishlist"
+        message={`Are you sure you want to remove ${itemToRemove?.name}?`}
+        confirmLabel="Remove"
+        isDestructive={true}
+        loading={isRemovingFromWishlist}
+      />
     </SafeScreen>
   );
 }

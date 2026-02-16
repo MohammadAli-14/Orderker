@@ -4,7 +4,9 @@ import { useUser, useClerk } from "@clerk/clerk-react";
 import DashboardPage from "./pages/DashboardPage";
 import ProductsPage from "./pages/ProductsPage";
 import OrdersPage from "./pages/OrdersPage";
+import OrderChainsPage from "./pages/OrderChainsPage";
 import CustomersPage from "./pages/CustomersPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 import PageLoader from "./components/PageLoader";
@@ -14,6 +16,7 @@ import LegalPage from "./pages/LegalPage";
 
 import logo from "./assets/logo.png";
 import { ShieldAlert } from "lucide-react";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -72,25 +75,30 @@ function App() {
   }
 
   return (
-    <Routes>
-      {/* If signed in & admin, go straight to dashboard. Otherwise show Landing Page */}
-      <Route path="/" element={isSignedIn && user?.publicMetadata?.role === "admin" ? <Navigate to="/dashboard" /> : <LandingPage />} />
-      <Route path="/privacy" element={<LegalPage />} />
-      <Route path="/terms" element={<LegalPage />} />
-      <Route path="/support" element={<LegalPage />} />
-      <Route path="/status" element={<LegalPage />} />
+    <>
+      <Toaster position="top-right" />
+      <Routes>
+        {/* If signed in & admin, go straight to dashboard. Otherwise show Landing Page */}
+        <Route path="/" element={isSignedIn && user?.publicMetadata?.role === "admin" ? <Navigate to="/dashboard" /> : <LandingPage />} />
+        <Route path="/privacy" element={<LegalPage />} />
+        <Route path="/terms" element={<LegalPage />} />
+        <Route path="/support" element={<LegalPage />} />
+        <Route path="/status" element={<LegalPage />} />
 
-      {/* Route for dedicated login page */}
-      <Route path="/login" element={isSignedIn && user?.publicMetadata?.role === "admin" ? <Navigate to="/dashboard" /> : <LoginPage />} />
+        {/* Route for dedicated login page */}
+        <Route path="/login" element={isSignedIn && user?.publicMetadata?.role === "admin" ? <Navigate to="/dashboard" /> : <LoginPage />} />
 
-      {/* Protected Dashboard Routes */}
-      <Route element={isSignedIn ? <DashboardLayout /> : <Navigate to="/login" />}>
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="products" element={<ProductsPage />} />
-        <Route path="orders" element={<OrdersPage />} />
-        <Route path="customers" element={<CustomersPage />} />
-      </Route>
-    </Routes>
+        {/* Protected Dashboard Routes */}
+        <Route element={isSignedIn ? <DashboardLayout /> : <Navigate to="/login" />}>
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="products" element={<ProductsPage />} />
+          <Route path="orders" element={<OrdersPage />} />
+          <Route path="order-chains" element={<OrderChainsPage />} />
+          <Route path="customers" element={<CustomersPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
 

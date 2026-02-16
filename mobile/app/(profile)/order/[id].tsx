@@ -1,7 +1,7 @@
 import SafeScreen from "@/components/SafeScreen";
 import { useOrderDetails } from "@/hooks/useOrders";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Alert, Linking } from "react-native";
 import { useEffect } from "react";
@@ -65,7 +65,8 @@ export default function OrderTrackingScreen() {
                 title: "In Transit",
                 time: order.shippedAt ? formatDate(order.shippedAt) : "Pending",
                 status: order.status === "shipped" ? "current" : (order.status === "delivered" ? "completed" : "upcoming"),
-                icon: "airplane-outline",
+                icon: "truck-delivery-outline",
+                iconType: "material",
                 description: "Your order is on the way"
             },
             {
@@ -128,11 +129,19 @@ export default function OrderTrackingScreen() {
                                         className={`w-10 h-10 rounded-full items-center justify-center z-10 
                       ${step.status === 'completed' ? 'bg-primary' : (step.status === 'current' ? 'bg-primary/20 border-2 border-primary' : 'bg-gray-100')}`}
                                     >
-                                        <Ionicons
-                                            name={step.icon as any}
-                                            size={20}
-                                            color={step.status === 'completed' ? 'white' : (step.status === 'current' ? '#5E2D87' : '#9CA3AF')}
-                                        />
+                                        {step.iconType === 'material' ? (
+                                            <MaterialCommunityIcons
+                                                name={step.icon as any}
+                                                size={20}
+                                                color={step.status === 'completed' ? 'white' : (step.status === 'current' ? '#5E2D87' : '#9CA3AF')}
+                                            />
+                                        ) : (
+                                            <Ionicons
+                                                name={step.icon as any}
+                                                size={20}
+                                                color={step.status === 'completed' ? 'white' : (step.status === 'current' ? '#5E2D87' : '#9CA3AF')}
+                                            />
+                                        )}
                                     </View>
                                     {index < steps.length - 1 && (
                                         <View

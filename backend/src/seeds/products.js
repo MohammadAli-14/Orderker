@@ -13,6 +13,8 @@ export const products = [
         ],
         averageRating: 4.8,
         totalReviews: 245,
+        isFlashSale: true,
+        discountPercent: 25,
     },
     {
         name: "Nestle Milk Pak (1 Liter)",
@@ -25,6 +27,8 @@ export const products = [
         ],
         averageRating: 4.9,
         totalReviews: 412,
+        isFlashSale: true,
+        discountPercent: 50,
     },
     {
         name: "Olper's Milk (1.5 Liter)",
@@ -37,6 +41,8 @@ export const products = [
         ],
         averageRating: 4.8,
         totalReviews: 328,
+        isFlashSale: true,
+        discountPercent: 75,
     },
     {
         name: "Pyaz (Onions)",
@@ -49,6 +55,8 @@ export const products = [
         ],
         averageRating: 4.4,
         totalReviews: 134,
+        isFlashSale: true,
+        discountPercent: 25,
     },
     {
         name: "Bhindi (Okra)",
@@ -61,6 +69,8 @@ export const products = [
         ],
         averageRating: 4.6,
         totalReviews: 78,
+        isFlashSale: true,
+        discountPercent: 50,
     },
     {
         name: "Adrak (Ginger)",
@@ -73,6 +83,8 @@ export const products = [
         ],
         averageRating: 4.7,
         totalReviews: 92,
+        isFlashSale: true,
+        discountPercent: 75,
     },
     {
         name: "Lehsan (Garlic)",
@@ -85,6 +97,8 @@ export const products = [
         ],
         averageRating: 4.5,
         totalReviews: 67,
+        isFlashSale: true,
+        discountPercent: 25,
     },
     {
         name: "Hari Mirch (Green Chillies)",
@@ -97,6 +111,8 @@ export const products = [
         ],
         averageRating: 4.4,
         totalReviews: 56,
+        isFlashSale: true,
+        discountPercent: 50,
     },
     {
         name: "Gobhi (Cauliflower)",

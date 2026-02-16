@@ -144,48 +144,60 @@ const OrdersScreen = () => {
           const itemCount = order.orderItems.length;
 
           return (
-            <TouchableOpacity
-              activeOpacity={0.9}
+            <View
               className="bg-white rounded-2xl p-4 mb-4 border border-gray-100 shadow-sm"
             >
-              <View className="flex-row gap-4">
-                {/* Image */}
-                <View className="w-24 h-24 bg-gray-50 rounded-xl items-center justify-center relative overflow-hidden">
-                  {firstItem?.image ? (
-                    <Image
-                      source={{ uri: firstItem.image }}
-                      style={{ width: "100%", height: "100%" }}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <Ionicons name="cube-outline" size={32} color="#9CA3AF" />
-                  )}
-                  {itemCount > 1 && (
-                    <View className="absolute bottom-0 right-0 bg-primary px-1.5 py-0.5 rounded-tl-lg">
-                      <Text className="text-white text-[10px] font-bold">+{itemCount - 1}</Text>
-                    </View>
-                  )}
-                </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  const productId = typeof firstItem?.product === 'string'
+                    ? firstItem.product
+                    : firstItem?.product?._id;
 
-                {/* Content */}
-                <View className="flex-1 justify-between">
-                  <View>
-                    <View className="flex-row justify-between items-start mb-1">
-                      <Text className="font-bold text-sm text-text-primary">Order #{order._id.slice(-8).toUpperCase()}</Text>
-                      <View className={`px-2 py-1 rounded-full ${bgClass}`}>
-                        <Text className={`text-[10px] font-bold uppercase tracking-wide ${textClass}`}>
-                          {order.status}
-                        </Text>
+                  if (productId) {
+                    router.push(`/product/${productId}` as any);
+                  }
+                }}
+              >
+                <View className="flex-row gap-4">
+                  {/* Image */}
+                  <View className="w-24 h-24 bg-gray-50 rounded-xl items-center justify-center relative overflow-hidden">
+                    {firstItem?.image ? (
+                      <Image
+                        source={{ uri: firstItem.image }}
+                        style={{ width: "100%", height: "100%" }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Ionicons name="cube-outline" size={32} color="#9CA3AF" />
+                    )}
+                    {itemCount > 1 && (
+                      <View className="absolute bottom-0 right-0 bg-primary px-1.5 py-0.5 rounded-tl-lg">
+                        <Text className="text-white text-[10px] font-bold">+{itemCount - 1}</Text>
                       </View>
+                    )}
+                  </View>
+
+                  {/* Content */}
+                  <View className="flex-1 justify-between">
+                    <View>
+                      <View className="flex-row justify-between items-start mb-1">
+                        <Text className="font-bold text-sm text-text-primary">Order #{order._id.slice(-8).toUpperCase()}</Text>
+                        <View className={`px-2 py-1 rounded-full ${bgClass}`}>
+                          <Text className={`text-[10px] font-bold uppercase tracking-wide ${textClass}`}>
+                            {order.status}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text className="text-xs text-text-secondary mb-1">{formatDate(order.createdAt)}</Text>
+                      <Text className="text-sm text-text-primary line-clamp-1" numberOfLines={1}>
+                        {firstItem?.name} {itemCount > 1 && ", ..."}
+                      </Text>
+                      <Text className="text-xs text-text-secondary mt-1">{itemCount} items</Text>
                     </View>
-                    <Text className="text-xs text-text-secondary mb-1">{formatDate(order.createdAt)}</Text>
-                    <Text className="text-sm text-text-primary line-clamp-1" numberOfLines={1}>
-                      {firstItem?.name} {itemCount > 1 && ", ..."}
-                    </Text>
-                    <Text className="text-xs text-text-secondary mt-1">{itemCount} items</Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
 
               <View className="h-px bg-gray-100 w-full my-4" />
 
@@ -214,7 +226,7 @@ const OrdersScreen = () => {
                   </TouchableOpacity>
                 )}
               </View>
-            </TouchableOpacity>
+            </View>
           );
         }}
       />

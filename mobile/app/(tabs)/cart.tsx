@@ -2,7 +2,8 @@ import SafeScreen from "@/components/SafeScreen";
 import { useAddresses } from "@/hooks/useAddressess";
 import useCart from "@/hooks/useCart";
 import { useApi } from "@/lib/api";
-import { formatCurrency } from "@/lib/utils";
+import { calculateFinalPrice, formatCurrency } from "@/lib/utils";
+import { useToast } from "@/context/ToastContext";
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View, TextInput, Platform, Image as RNImage } from "react-native";
 import { useStripe } from "@stripe/stripe-react-native";
 import { useState } from "react";
@@ -13,6 +14,7 @@ import OrderSummary from "@/components/OrderSummary";
 import AddressSelectionModal from "@/components/AddressSelectionModal";
 import { PrimaryButton } from "@/components/PrimaryButton"; // Updated import
 import { CartItemSkeleton } from "@/components/Skeleton";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 import * as Sentry from "@sentry/react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -31,6 +33,7 @@ const CartScreen = () => {
     isError,
     isLoading,
     isRemoving,
+    isClearing,
     isUpdating,
     removeFromCart,
     updateQuantity,
@@ -41,11 +44,18 @@ const CartScreen = () => {
 
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [removeModalVisible, setRemoveModalVisible] = useState(false);
+  const [clearCartVisible, setClearCartVisible] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState<{ id: string; name: string } | null>(null);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Stripe");
+  const { showToast } = useToast();
 
   const cartItems = cart?.items || [];
-  const subtotal = cartTotal;
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = calculateFinalPrice(item.product.price, item.product.isFlashSale, item.product.discountPercent);
+    return sum + (price * item.quantity);
+  }, 0);
   const shipping = 150;
   const tax = subtotal * 0.05;
   const total = subtotal + shipping + tax;
@@ -57,35 +67,22 @@ const CartScreen = () => {
   };
 
   const handleRemoveItem = (productId: string, productName: string) => {
-    Alert.alert("Remove Item", `Remove ${productName} from cart?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: () => removeFromCart(productId),
-      },
-    ]);
+    setItemToRemove({ id: productId, name: productName });
+    setRemoveModalVisible(true);
   };
 
   const handleClearCart = () => {
-    Alert.alert("Clear Cart", "Are you sure you want to remove all items from your cart?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Clear All",
-        style: "destructive",
-        onPress: () => clearCart(),
-      },
-    ]);
+    setClearCartVisible(true);
   };
 
   const handleCheckout = () => {
     if (cartItems.length === 0) return;
     if (!addresses || addresses.length === 0) {
-      Alert.alert(
-        "No Address",
-        "Please add a shipping address in your profile before checking out.",
-        [{ text: "OK" }]
-      );
+      showToast({
+        title: "No Address",
+        message: "Please add a shipping address in your profile before checking out.",
+        type: "info"
+      });
       return;
     }
     setAddressModalVisible(true);
@@ -140,7 +137,11 @@ const CartScreen = () => {
         });
 
         if (initError) {
-          Alert.alert("Error", initError.message);
+          showToast({
+            title: "Error",
+            message: initError.message,
+            type: "error"
+          });
           setPaymentLoading(false);
           return;
         }
@@ -148,11 +149,19 @@ const CartScreen = () => {
         const { error: presentError } = await presentPaymentSheet();
 
         if (presentError) {
-          Alert.alert("Payment cancelled", presentError.message);
+          showToast({
+            title: "Payment cancelled",
+            message: presentError.message,
+            type: "info"
+          });
           return;
         }
 
-        Alert.alert("Success", "Your payment was successful!", [{ text: "OK" }]);
+        showToast({
+          title: "Success",
+          message: "Your payment was successful!",
+          type: "success"
+        });
         clearCart();
         return;
       }
@@ -178,9 +187,11 @@ const CartScreen = () => {
         totalPrice: total,
       });
 
-      Alert.alert("Success", "Your order has been placed successfully!", [
-        { text: "OK", onPress: () => { } },
-      ]);
+      showToast({
+        title: "Success",
+        message: "Your order has been placed successfully!",
+        type: "success"
+      });
       clearCart();
 
     } catch (error) {
@@ -197,7 +208,11 @@ const CartScreen = () => {
         msg = error.message;
       }
 
-      Alert.alert("Error", msg);
+      showToast({
+        title: "Error",
+        message: msg,
+        type: "error"
+      });
     } finally {
       setPaymentLoading(false);
     }
@@ -261,9 +276,16 @@ const CartScreen = () => {
                 </Text>
 
                 <View className="flex-row items-center justify-between mt-2">
-                  <Text className="text-primary font-bold text-lg">
-                    Rs. {item.product.price * item.quantity}
-                  </Text>
+                  <View>
+                    <Text className="text-primary font-bold text-lg">
+                      Rs. {calculateFinalPrice(item.product.price, item.product.isFlashSale, item.product.discountPercent) * item.quantity}
+                    </Text>
+                    {item.product.isFlashSale && (
+                      <Text className="text-text-secondary text-xs line-through">
+                        Rs. {item.product.price * item.quantity}
+                      </Text>
+                    )}
+                  </View>
 
                   {/* Quantity Control */}
                   <View className="flex-row items-center bg-surface rounded-lg">
@@ -363,6 +385,54 @@ const CartScreen = () => {
         onProceed={handleProceedWithPayment}
         isProcessing={paymentLoading}
       />
+
+      {/* Remove Item Confirmation */}
+      <ConfirmModal
+        visible={removeModalVisible}
+        onClose={() => setRemoveModalVisible(false)}
+        onConfirm={() => {
+          if (itemToRemove) {
+            removeFromCart(itemToRemove.id, {
+              onSuccess: () => {
+                setRemoveModalVisible(false);
+                showToast({
+                  title: "Removed",
+                  message: `${itemToRemove.name} removed from cart`,
+                  type: "success"
+                });
+              }
+            });
+          }
+        }}
+        title="Remove Item"
+        message={`Are you sure you want to remove ${itemToRemove?.name} from your cart?`}
+        confirmLabel="Remove"
+        isDestructive={true}
+        loading={isRemoving}
+      />
+
+      {/* Clear Cart Confirmation */}
+      <ConfirmModal
+        visible={clearCartVisible}
+        onClose={() => setClearCartVisible(false)}
+        onConfirm={() => {
+          clearCart(undefined, {
+            onSuccess: () => {
+              setClearCartVisible(false);
+              showToast({
+                title: "Cart Cleared",
+                message: "All items removed from your cart",
+                type: "success"
+              });
+            }
+          });
+        }}
+        title="Clear Cart"
+        message="Are you sure you want to remove all items from your cart? This action cannot be undone."
+        confirmLabel="Clear All"
+        isDestructive={true}
+        loading={isClearing}
+      />
     </SafeScreen>
   );
 };
@@ -390,17 +460,61 @@ function ErrorUI() {
 }
 
 function EmptyUI() {
-  return (
-    <View className="flex-1 bg-white items-center justify-center px-6">
-      <View className="w-24 h-24 bg-surface rounded-full items-center justify-center mb-6">
-        <Ionicons name="cart-outline" size={40} color="#9CA3AF" />
-      </View>
-      <Text className="text-text-primary font-bold text-xl">Your cart is empty</Text>
-      <Text className="text-text-secondary text-center mt-2 mb-8">
-        Add some products to get started
-      </Text>
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-      {/* We can add a "Start Shopping" button here later */}
-    </View>
+  const handleStartShopping = () => {
+    setIsRedirecting(true);
+    // Add a small delay for the ripple effect/interaction to be felt
+    setTimeout(() => {
+      router.push("/(tabs)/home");
+      // Reset state after navigation (though component might unmount)
+      setIsRedirecting(false);
+    }, 500);
+  };
+
+  return (
+    <SafeScreen>
+      <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 items-center justify-center -ml-2"
+        >
+          <Ionicons name="arrow-back" size={24} color="#1F2937" />
+        </TouchableOpacity>
+        <Text className="text-xl font-bold text-text-primary">Cart</Text>
+        <View className="bg-primary/10 px-3 py-1 rounded-full">
+          <Text className="text-primary text-xs font-bold">0 items</Text>
+        </View>
+      </View>
+
+      <View className="flex-1 items-center justify-center py-20 bg-white px-6">
+        <View className="w-32 h-32 bg-primary/5 rounded-full items-center justify-center mb-8 border border-primary/10 shadow-sm">
+          <View className="w-24 h-24 bg-primary/10 rounded-full items-center justify-center">
+            <Ionicons name="cart-outline" size={48} color="#5E2D87" />
+          </View>
+        </View>
+        <Text className="text-3xl font-bold text-text-primary mb-3 text-center">Your Cart is Empty</Text>
+        <Text className="text-text-secondary text-center px-8 leading-6 text-base mb-10">
+          Looks like you haven't added anything to your cart yet. Go ahead and explore our top categories.
+        </Text>
+
+        <TouchableOpacity
+          onPress={handleStartShopping}
+          disabled={isRedirecting}
+          className={`px-12 py-4 rounded-full flex-row items-center justify-center shadow-lg shadow-primary/30 ${isRedirecting ? "bg-primary/70" : "bg-primary"
+            }`}
+          activeOpacity={0.8}
+        >
+          {isRedirecting ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <>
+              <Text className="text-white font-bold text-lg mr-2">Start Shopping</Text>
+              <Ionicons name="arrow-forward" size={22} color="white" />
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </SafeScreen>
   );
 }

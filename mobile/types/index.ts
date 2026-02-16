@@ -8,6 +8,8 @@ export interface Product {
   images: string[];
   averageRating: number;
   totalReviews: number;
+  isFlashSale?: boolean;
+  discountPercent?: number;
   createdAt: string;
   updatedAt: string;
 }

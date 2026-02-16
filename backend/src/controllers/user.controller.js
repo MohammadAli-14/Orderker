@@ -142,10 +142,20 @@ export async function removeFromWishlist(req, res) {
   }
 }
 
+import { Product } from "../models/product.model.js";
+
 export async function getWishlist(req, res) {
   try {
     // we're using populate, bc wishlist is just an array of product ids
-    const user = await User.findById(req.user._id).populate("wishlist");
+    // Explicitly mentioning model and selection to avoid any missing fields
+    const user = await User.findById(req.user._id).populate({
+      path: "wishlist",
+      model: "Product",
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
     res.status(200).json({ wishlist: user.wishlist });
   } catch (error) {
@@ -181,6 +191,39 @@ export async function syncUserRole(req, res) {
     res.status(200).json({ message: "No role change needed", role: user.role });
   } catch (error) {
     console.error("Error in syncUserRole:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export async function getProfile(req, res) {
+  try {
+    const user = req.user;
+    res.status(200).json({ user });
+  } catch (error) {
+    console.error("Error in getProfile controller:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export async function updateProfile(req, res) {
+  try {
+    const { name, email, phoneNumber } = req.body;
+    const user = req.user;
+
+    // Reset verification if phone number is changed
+    if (phoneNumber && phoneNumber !== user.phoneNumber) {
+      user.isPhoneVerified = false;
+    }
+
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.phoneNumber = phoneNumber || user.phoneNumber;
+
+    await user.save();
+
+    res.status(200).json({ message: "Profile updated successfully", user });
+  } catch (error) {
+    console.error("Error in updateProfile controller:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 }

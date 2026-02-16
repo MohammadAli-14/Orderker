@@ -64,6 +64,14 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    phoneNumber: {
+      type: String,
+      default: "",
+    },
+    isPhoneVerified: {
+      type: Boolean,
+      default: false,
+    },
     addresses: [addressSchema],
     wishlist: [
       {

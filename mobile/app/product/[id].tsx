@@ -1,8 +1,9 @@
 import SafeScreen from "@/components/SafeScreen";
 import useCart from "@/hooks/useCart";
+import { useToast } from "@/context/ToastContext";
 import { useProduct } from "@/hooks/useProduct";
 import useWishlist from "@/hooks/useWishlist";
-import { formatCurrency } from "@/lib/utils";
+import { calculateFinalPrice, formatCurrency } from "@/lib/utils";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
@@ -23,6 +24,7 @@ const ProductDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: product, isError, isLoading } = useProduct(id);
   const { addToCart, isAddingToCart } = useCart();
+  const { showToast } = useToast();
 
   const { isInWishlist, toggleWishlist, isAddingToWishlist, isRemovingFromWishlist } =
     useWishlist();
@@ -35,9 +37,17 @@ const ProductDetailScreen = () => {
     addToCart(
       { productId: product._id, quantity },
       {
-        onSuccess: () => Alert.alert("Success", `${product.name} added to cart!`),
+        onSuccess: () => showToast({
+          title: "Success",
+          message: `${product.name} added to cart!`,
+          type: "success"
+        }),
         onError: (error: any) => {
-          Alert.alert("Error", error?.response?.data?.error || "Failed to add to cart");
+          showToast({
+            title: "Error",
+            message: error?.response?.data?.error || "Failed to add to cart",
+            type: "error"
+          });
         },
       }
     );
@@ -124,7 +134,7 @@ const ProductDetailScreen = () => {
           </View>
 
           {/* Product Name */}
-          <Text className="text-text-primary text-3xl font-bold mb-3">{product.name}</Text>
+          <Text className="text-text-primary text-2xl font-bold mb-2">{product.name}</Text>
 
           {/* Rating & Reviews */}
           <View className="flex-row items-center mb-4">
@@ -152,12 +162,28 @@ const ProductDetailScreen = () => {
 
           {/* Price */}
           <View className="flex-row items-center mb-6">
-            <Text className="text-primary text-4xl font-bold">{formatCurrency(product.price)}</Text>
+            {product.isFlashSale ? (
+              <View>
+                <View className="flex-row items-center">
+                  <Text className="text-primary text-3xl font-bold">
+                    {formatCurrency(calculateFinalPrice(product.price, product.isFlashSale, product.discountPercent))}
+                  </Text>
+                  <View className="ml-3 bg-accent-red px-2 py-1 rounded-lg">
+                    <Text className="text-white text-xs font-black">-{product.discountPercent || 0}% OFF</Text>
+                  </View>
+                </View>
+                <Text className="text-text-secondary text-sm line-through mt-1">
+                  Original: {formatCurrency(product.price)}
+                </Text>
+              </View>
+            ) : (
+              <Text className="text-primary text-3xl font-bold">{formatCurrency(product.price)}</Text>
+            )}
           </View>
 
           {/* Quantity */}
           <View className="mb-6">
-            <Text className="text-text-primary text-lg font-bold mb-3">Quantity</Text>
+            <Text className="text-text-primary text-base font-bold mb-3">Quantity</Text>
 
             <View className="flex-row items-center">
               <TouchableOpacity
@@ -192,8 +218,8 @@ const ProductDetailScreen = () => {
 
           {/* Description */}
           <View className="mb-8">
-            <Text className="text-text-primary text-lg font-bold mb-3">Description</Text>
-            <Text className="text-text-secondary text-base leading-6">{product.description}</Text>
+            <Text className="text-text-primary text-base font-bold mb-2">Description</Text>
+            <Text className="text-text-secondary text-sm leading-5">{product.description}</Text>
           </View>
         </View>
       </ScrollView>
@@ -202,9 +228,9 @@ const ProductDetailScreen = () => {
       <View className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-surface px-6 py-4 pb-8">
         <View className="flex-row items-center gap-3">
           <View className="flex-1">
-            <Text className="text-text-secondary text-sm mb-1">Total Price</Text>
-            <Text className="text-primary text-2xl font-bold">
-              {formatCurrency(product.price * quantity)}
+            <Text className="text-text-secondary text-xs mb-1">Total Price</Text>
+            <Text className="text-primary text-xl font-bold">
+              {formatCurrency(calculateFinalPrice(product.price, product.isFlashSale, product.discountPercent) * quantity)}
             </Text>
           </View>
           <TouchableOpacity
@@ -220,7 +246,7 @@ const ProductDetailScreen = () => {
               <>
                 <Ionicons name="cart" size={24} color={!inStock ? "#666" : "#121212"} />
                 <Text
-                  className={`font-bold text-lg ml-2 ${!inStock ? "text-text-secondary" : "text-background"
+                  className={`font-bold text-base ml-2 ${!inStock ? "text-text-secondary" : "text-background"
                     }`}
                 >
                   {!inStock ? "Out of Stock" : "Add to Cart"}

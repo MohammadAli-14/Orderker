@@ -7,33 +7,54 @@ interface SearchInputProps {
     value: string;
     onChangeText: (text: string) => void;
     onFilterPress?: () => void;
+    containerStyle?: any;
+    inputStyle?: any;
+    hideFilter?: boolean;
+    placeholderTextColor?: string;
 }
 
-export const SearchInput = ({ placeholder = "Search for groceries...", value, onChangeText, onFilterPress }: SearchInputProps) => {
+export const SearchInput = ({
+    placeholder = "Search for groceries...",
+    value,
+    onChangeText,
+    onFilterPress,
+    containerStyle,
+    inputStyle,
+    hideFilter = false,
+    placeholderTextColor = "#9CA3AF"
+}: SearchInputProps) => {
     return (
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+        <View style={[{ flexDirection: "row", alignItems: "center", marginBottom: 16 }, containerStyle]}>
             <View
                 style={{
                     flex: 1,
                     flexDirection: "row",
                     alignItems: "center",
-                    backgroundColor: "#F3F4F6",
+                    backgroundColor: hideFilter ? "transparent" : "#F3F4F6",
                     borderRadius: 12,
                     paddingHorizontal: 12,
-                    height: 48
+                    height: containerStyle?.height || 48
                 }}
             >
-                <Ionicons name="search" size={20} color="#6B7280" />
+                {!hideFilter && <Ionicons name="search" size={20} color="#6B7280" />}
                 <TextInput
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholder}
-                    placeholderTextColor="#9CA3AF"
-                    style={{ flex: 1, marginLeft: 8, fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#1F2937" }}
+                    placeholderTextColor={placeholderTextColor}
+                    style={[{
+                        flex: 1,
+                        marginLeft: hideFilter ? 0 : 8,
+                        fontSize: 14,
+                        fontFamily: "PlusJakartaSans_500Medium",
+                        color: "#111827", // Darker text for visibility
+                        includeFontPadding: false,
+                        textAlignVertical: "center"
+                    }, inputStyle]}
                 />
             </View>
 
-            {onFilterPress && (
+            {!hideFilter && onFilterPress && (
                 <TouchableOpacity
                     onPress={onFilterPress}
                     style={{

@@ -5,6 +5,8 @@ import { ClerkProvider } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import * as Sentry from "@sentry/react-native";
 import { StripeProvider } from "@stripe/stripe-react-native";
+import { ToastProvider } from "@/context/ToastContext";
+import Toast from "@/components/Toast";
 
 Sentry.init({
   dsn: "https://fb6731b90610cc08333e6c16ffac5724@o4509813037137920.ingest.de.sentry.io/4510451611205712",
@@ -104,11 +106,14 @@ export default Sentry.wrap(function RootLayout() {
     <ClerkProvider publishableKey={clerkPublishableKey} tokenCache={tokenCache}>
       <QueryClientProvider client={queryClient}>
         <StripeProvider publishableKey={stripePublishableKey}>
-          <ConfigGuardian>
-            <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FFFFFF" } }} />
-            </View>
-          </ConfigGuardian>
+          <ToastProvider>
+            <ConfigGuardian>
+              <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FFFFFF" } }} />
+              </View>
+            </ConfigGuardian>
+            <Toast />
+          </ToastProvider>
         </StripeProvider>
       </QueryClientProvider>
     </ClerkProvider>

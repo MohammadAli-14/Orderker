@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useApi } from "@/lib/api";
 import useCart from "@/hooks/useCart";
 import { CartItem } from "@/types";
+import { useToast } from "@/context/ToastContext";
 
 export default function PaymentVerificationScreen() {
     const router = useRouter();
@@ -28,6 +29,7 @@ export default function PaymentVerificationScreen() {
     const [trxId, setTrxId] = useState("");
     const [receiptImage, setReceiptImage] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { showToast } = useToast();
 
     const { cart, clearCart } = useCart();
     const cartItems = cart?.items || [];
@@ -59,7 +61,11 @@ export default function PaymentVerificationScreen() {
 
     const handleCopy = async () => {
         await Clipboard.setStringAsync(accountNumber);
-        Alert.alert("Copied", "Account number copied to clipboard");
+        showToast({
+            title: "Copied",
+            message: "Account number copied to clipboard",
+            type: "info"
+        });
     };
 
     const pickImage = async () => {
@@ -76,12 +82,20 @@ export default function PaymentVerificationScreen() {
 
     const handleSubmit = async () => {
         if (!trxId || !receiptImage) {
-            Alert.alert("Missing Information", "Please enter Transaction ID and upload a receipt.");
+            showToast({
+                title: "Missing Information",
+                message: "Please enter Transaction ID and upload a receipt.",
+                type: "error"
+            });
             return;
         }
 
         if (cartItems.length === 0) {
-            Alert.alert("Error", "Cart is empty. Please go back and add items.");
+            showToast({
+                title: "Error",
+                message: "Cart is empty. Please go back and add items.",
+                type: "error"
+            });
             return;
         }
 
@@ -120,22 +134,30 @@ export default function PaymentVerificationScreen() {
 
             clearCart();
 
-            Alert.alert("Order Placed!", "Your payment proof has been submitted. We will verify it shortly.", [
-                {
-                    text: "View My Orders",
-                    onPress: () => router.push({
-                        pathname: "/(profile)/order/[id]",
-                        params: { id: data.order._id }
-                    })
-                }
-            ]);
+            showToast({
+                title: "Order Placed!",
+                message: "Your payment proof has been submitted. We will verify it shortly.",
+                type: "success"
+            });
+
+            // Delay navigation slightly so the user sees the toast
+            setTimeout(() => {
+                router.push({
+                    pathname: "/(profile)/order/[id]",
+                    params: { id: data.order._id }
+                });
+            }, 1000);
         } catch (error: any) {
             console.error("Manual order creation error:", {
                 message: error.message,
                 status: error.response?.status,
                 data: error.response?.data
             });
-            Alert.alert("Error", error?.response?.data?.error || `Failed to create order (${error.message}). Please try again.`);
+            showToast({
+                title: "Error",
+                message: error?.response?.data?.error || `Failed to create order (${error.message}). Please try again.`,
+                type: "error"
+            });
         } finally {
             setIsSubmitting(false);
         }

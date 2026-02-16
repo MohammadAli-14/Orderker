@@ -147,8 +147,8 @@ export const HeroCarousel = () => {
         // Impact Light provides a premium tactile response for buttons
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-        // Navigate to home tab with category filter
-        router.push(`/(tabs)/home?category=${encodeURIComponent(category)}`);
+        // Update local search params for home screen
+        router.setParams({ category });
     }, [router]);
 
     // Auto-scroll logic
@@ -240,44 +240,36 @@ export const HeroCarousel = () => {
 
 const styles = StyleSheet.create({
     container: {
-        marginVertical: 24,
+        marginBottom: 20,
     },
     flatListContent: {
-        paddingHorizontal: 24,
+        paddingHorizontal: 0, // Bleed to edges for hero look
     },
     bannerContainer: {
-        width: CARD_WIDTH,
-        height: 200,
+        width: width, // Full width for hero
+        height: 180, // Reduced from 250 for better visibility
     },
     card: {
         flex: 1,
-        borderRadius: 24,
+        borderRadius: 0, // No border radius for top hero
         overflow: "hidden",
         position: "relative",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.15,
-        shadowRadius: 24,
-        elevation: 10,
-        marginRight: 12,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.1)",
     },
     textOverlay: {
         position: "absolute",
         bottom: 0,
         left: 0,
         right: 0,
-        padding: 24,
+        padding: 16, // Reduced from 24
         zIndex: 10,
     },
     badge: {
         backgroundColor: APP_PRIMARY_PURPLE,
-        paddingHorizontal: 14,
-        paddingVertical: 6,
+        paddingHorizontal: 10, // Reduced from 14
+        paddingVertical: 4, // Reduced from 6
         borderRadius: 20,
         alignSelf: "flex-start",
-        marginBottom: 12,
+        marginBottom: 8, // Reduced from 12
         shadowColor: APP_PRIMARY_PURPLE,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
@@ -285,38 +277,38 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     badgeText: {
-        fontSize: 10,
+        fontSize: 9, // Reduced from 10
         fontWeight: "900",
-        letterSpacing: 0.8,
+        letterSpacing: 0.6,
         textTransform: "uppercase",
         color: "#FFFFFF",
     },
     title: {
-        fontSize: 22,
+        fontSize: 18, // Reduced from 22
         fontWeight: "900",
-        lineHeight: 26,
-        marginBottom: 4,
-        letterSpacing: 0.3,
+        lineHeight: 22, // Reduced from 26
+        marginBottom: 2, // Reduced from 4
+        letterSpacing: 0.2,
         color: "#FFFFFF",
         textShadowColor: 'rgba(0, 0, 0, 0.8)',
         textShadowOffset: { width: 0, height: 2 },
         textShadowRadius: 8,
     },
     subtitle: {
-        fontSize: 14,
+        fontSize: 11, // Reduced from 14
         fontWeight: "700",
-        marginBottom: 16,
+        marginBottom: 12, // Reduced from 16
         color: "#FFFFFF",
         opacity: 0.95,
         textShadowColor: 'rgba(0, 0, 0, 0.6)',
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 4,
-        letterSpacing: 0.4,
+        letterSpacing: 0.3,
     },
     button: {
         backgroundColor: APP_PRIMARY_PURPLE,
-        paddingHorizontal: 24,
-        paddingVertical: 12,
+        paddingHorizontal: 20, // Reduced from 24
+        paddingVertical: 8, // Reduced from 12
         borderRadius: 24,
         alignSelf: "flex-start",
         shadowColor: APP_PRIMARY_PURPLE,
@@ -326,17 +318,17 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     buttonText: {
-        fontSize: 13,
+        fontSize: 11, // Reduced from 13
         fontWeight: "800",
         color: '#FFFFFF',
-        letterSpacing: 0.5,
+        letterSpacing: 0.4,
     },
     pagination: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        marginTop: 20,
-        gap: 8,
+        marginTop: 12, // Reduced from 20
+        gap: 6, // Reduced from 8
     },
     dot: {
         height: 8,

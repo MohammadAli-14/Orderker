@@ -8,7 +8,9 @@ import {
   updateOrderStatus,
   updateProduct,
   deleteProduct,
+  verifyUser,
 } from "../controllers/admin.controller.js";
+import { getAnalytics, getCustomerChains } from "../controllers/analytics.controller.js";
 import { adminOnly, protectRoute } from "../middleware/auth.middleware.js";
 import { upload } from "../middleware/multer.middleware.js";
 
@@ -26,8 +28,11 @@ router.get("/orders", getAllOrders);
 router.patch("/orders/:orderId/status", updateOrderStatus);
 
 router.get("/customers", getAllCustomers);
+router.patch("/users/:id/verify", verifyUser);
 
 router.get("/stats", getDashboardStats);
+router.get("/analytics", getAnalytics);
+router.get("/customers/chains", getCustomerChains);
 
 // PUT: Used for full resource replacement, updating the entire resource
 // PATCH: Used for partial resource updates, updating a specific part of the resource

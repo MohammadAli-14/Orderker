@@ -26,3 +26,11 @@ export const formatCurrency = (amount: number | string) => {
     maximumFractionDigits: 0,
   })}`;
 };
+
+export const calculateFinalPrice = (price: number, isFlashSale?: boolean | string, discountPercent?: number | string): number => {
+  const isSale = isFlashSale === true || isFlashSale === "true";
+  const discount = typeof discountPercent === "string" ? parseFloat(discountPercent) : discountPercent;
+
+  if (!isSale || !discount || discount <= 0) return price;
+  return Math.round(price * (1 - discount / 100));
+};

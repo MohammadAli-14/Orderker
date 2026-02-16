@@ -35,8 +35,8 @@ export const orderApi = {
 };
 
 export const statsApi = {
-  getDashboard: async () => {
-    const { data } = await axiosInstance.get("/admin/stats");
+  getDashboard: async (params) => {
+    const { data } = await axiosInstance.get("/admin/stats", { params });
     return data;
   },
 };
@@ -44,6 +44,23 @@ export const statsApi = {
 export const customerApi = {
   getAll: async () => {
     const { data } = await axiosInstance.get("/admin/customers");
+    return data;
+  },
+
+  verify: async ({ id, isVerified }) => {
+    const { data } = await axiosInstance.patch(`/admin/users/${id}/verify`, { isVerified });
+    return data;
+  },
+
+  getChains: async () => {
+    const { data } = await axiosInstance.get("/admin/customers/chains");
+    return data;
+  },
+};
+
+export const analyticsApi = {
+  getAll: async () => {
+    const { data } = await axiosInstance.get("/admin/analytics");
     return data;
   },
 };

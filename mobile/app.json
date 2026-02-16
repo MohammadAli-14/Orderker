@@ -4,7 +4,7 @@
     "slug": "orderker",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/orderker-logo-full.png",
+    "icon": "./assets/images/final-icon-foreground.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,8 +14,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/images/orderker-logo-full.png"
+        "backgroundColor": "#5a267a",
+        "foregroundImage": "./assets/images/final-icon-foreground.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -39,12 +39,12 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/orderker-logo-banner.jpg",
-          "imageWidth": 280,
+          "image": "./assets/images/final-splash.png",
+          "imageWidth": 250,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#ffffff"
           }
         }
       ],

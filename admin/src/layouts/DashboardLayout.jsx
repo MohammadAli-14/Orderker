@@ -1,21 +1,34 @@
 import { Outlet } from "react-router";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import { useState } from "react";
 
 function DashboardLayout() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   return (
-    <div className="drawer lg:drawer-open">
-      <input id="my-drawer" type="checkbox" className="drawer-toggle" defaultChecked />
+    <div className="flex min-h-screen bg-base-200">
+      {/* MOBILE OVERLAY */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
-      <div className="drawer-content">
-        <Navbar />
+      {/* SIDEBAR */}
+      <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
-        <main className="p-6">
-          <Outlet />
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 md:ml-64 ml-0 flex flex-col min-h-screen transition-all duration-300">
+        <Navbar onToggleSidebar={() => setIsSidebarOpen(true)} />
+
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+          <div className="max-w-7xl mx-auto animate-in fade-in duration-500">
+            <Outlet />
+          </div>
         </main>
       </div>
-
-      <Sidebar />
     </div>
   );
 }

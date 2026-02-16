@@ -20,6 +20,7 @@ import paymentRoutes from "./routes/payment.route.js";
 
 import uploadRoutes from "./routes/upload.route.js";
 import configRoutes from "./routes/config.route.js";
+import publicRoutes from "./routes/public.route.js";
 import { fileURLToPath } from "url";
 
 const app = express();
@@ -81,6 +82,7 @@ app.use((req, res, next) => {
 
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
+app.use("/api/public", publicRoutes);
 app.use("/api/config", configRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);

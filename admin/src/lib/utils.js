@@ -11,6 +11,8 @@ export const getOrderStatusBadge = (status) => {
       return "badge-info";
     case "pending":
       return "badge-warning";
+    case "cancelled":
+      return "badge-error";
     default:
       return "badge-ghost";
   }

@@ -5,7 +5,7 @@ import { User } from "../models/user.model.js";
 
 export async function createProduct(req, res) {
   try {
-    const { name, description, price, stock, category } = req.body;
+    const { name, description, price, stock, category, isFlashSale, discountPercent } = req.body;
 
     if (!name || !description || !price || !stock || !category) {
       return res.status(400).json({ message: "All fields are required" });
@@ -36,6 +36,8 @@ export async function createProduct(req, res) {
       stock: parseInt(stock),
       category,
       images: imageUrls,
+      isFlashSale: isFlashSale === "true" || isFlashSale === true,
+      discountPercent: parseFloat(discountPercent) || 0,
     });
 
     res.status(201).json(product);
@@ -59,7 +61,7 @@ export async function getAllProducts(_, res) {
 export async function updateProduct(req, res) {
   try {
     const { id } = req.params;
-    const { name, description, price, stock, category } = req.body;
+    const { name, description, price, stock, category, isFlashSale, discountPercent } = req.body;
 
     const product = await Product.findById(id);
     if (!product) {
@@ -71,6 +73,8 @@ export async function updateProduct(req, res) {
     if (price !== undefined) product.price = parseFloat(price);
     if (stock !== undefined) product.stock = parseInt(stock);
     if (category) product.category = category;
+    if (isFlashSale !== undefined) product.isFlashSale = isFlashSale === "true" || isFlashSale === true;
+    if (discountPercent !== undefined) product.discountPercent = parseFloat(discountPercent);
 
     // handle image updates if new images are uploaded
     if (req.files && req.files.length > 0) {
@@ -115,7 +119,7 @@ export async function updateOrderStatus(req, res) {
     const { orderId } = req.params;
     const { status } = req.body;
 
-    if (!["pending", "shipped", "delivered"].includes(status)) {
+    if (!["pending", "shipped", "delivered", "cancelled"].includes(status)) {
       return res.status(400).json({ error: "Invalid status" });
     }
 
@@ -171,29 +175,88 @@ export async function getAllCustomers(_, res) {
   }
 }
 
-export async function getDashboardStats(_, res) {
+export async function getDashboardStats(req, res) {
   try {
     const totalOrders = await Order.countDocuments();
+    const totalCustomers = await User.countDocuments({ role: "user" });
+    const totalProducts = await Product.countDocuments();
 
+    // 1. Total Revenue
     const revenueResult = await Order.aggregate([
+      { $group: { _id: null, total: { $sum: "$totalPrice" } } },
+    ]);
+    const totalRevenue = revenueResult[0]?.total || 0;
+
+    // 2. Revenue Trend (Dynamic Time Range)
+    const { timeRange = "7d" } = req.query;
+
+    let startDate = new Date();
+    let groupByFormat = "%Y-%m-%d"; // Default: Daily
+
+    if (timeRange === "1d") {
+      startDate.setHours(0, 0, 0, 0); // Start of today
+      groupByFormat = "%H:00"; // Hourly grouping
+    } else if (timeRange === "30d") {
+      startDate.setDate(startDate.getDate() - 30);
+    } else if (timeRange === "12m") {
+      startDate.setMonth(startDate.getMonth() - 11); // Last 12 months
+      startDate.setDate(1); // Start from first day of that month
+      groupByFormat = "%Y-%m"; // Monthly grouping
+    } else {
+      // Default 7 days
+      startDate.setDate(startDate.getDate() - 7);
+    }
+
+    const revenueByDate = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate },
+        },
+      },
       {
         $group: {
-          _id: null,
-          total: { $sum: "$totalPrice" },
+          _id: { $dateToString: { format: groupByFormat, date: "$createdAt" } },
+          amount: { $sum: "$totalPrice" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    // 3. Orders by Status
+    const ordersByStatus = await Order.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
         },
       },
     ]);
 
-    const totalRevenue = revenueResult[0]?.total || 0;
-
-    const totalCustomers = await User.countDocuments();
-    const totalProducts = await Product.countDocuments();
+    // 4. Top Selling Products
+    const topProducts = await Order.aggregate([
+      { $unwind: "$orderItems" },
+      {
+        $group: {
+          _id: "$orderItems.product", // Group by product ID
+          name: { $first: "$orderItems.name" }, // Get name (might not differ)
+          sales: { $sum: "$orderItems.quantity" },
+          revenue: { $sum: { $multiply: ["$orderItems.price", "$orderItems.quantity"] } }
+        },
+      },
+      { $sort: { sales: -1 } },
+      { $limit: 5 },
+    ]);
 
     res.status(200).json({
       totalRevenue,
       totalOrders,
       totalCustomers,
       totalProducts,
+      charts: {
+        revenueByDate,
+        ordersByStatus,
+        topProducts,
+      },
     });
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
@@ -225,5 +288,25 @@ export const deleteProduct = async (req, res) => {
   } catch (error) {
     console.error("Error deleting product:", error);
     res.status(500).json({ message: "Failed to delete product" });
+  }
+};
+
+export const verifyUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isVerified } = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.isPhoneVerified = isVerified;
+    await user.save();
+
+    res.status(200).json({ message: `User ${isVerified ? 'verified' : 'unverified'} successfully`, user });
+  } catch (error) {
+    console.error("Error verifying user:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

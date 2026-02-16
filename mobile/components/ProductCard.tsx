@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { calculateFinalPrice } from "@/lib/utils";
 
 interface ProductCardProps {
     title: string;
@@ -15,6 +16,9 @@ interface ProductCardProps {
     onPress: () => void;
     isAddingToCart?: boolean;
     isWishlistLoading?: boolean;
+    isFlashSale?: boolean;
+    discountPercent?: number;
+    compact?: boolean;
 }
 
 export const ProductCard = ({
@@ -28,8 +32,12 @@ export const ProductCard = ({
     onAdd,
     onPress,
     isAddingToCart,
-    isWishlistLoading
+    isWishlistLoading,
+    isFlashSale,
+    discountPercent,
+    compact
 }: ProductCardProps) => {
+    const salePrice = calculateFinalPrice(price, isFlashSale, discountPercent || 0);
     return (
         <TouchableOpacity
             onPress={onPress}
@@ -37,10 +45,16 @@ export const ProductCard = ({
             accessibilityLabel={`${title}, Price: PKR ${price}`}
             accessibilityRole="link"
             accessibilityHint="Navigates to product details"
-            className="bg-white rounded-3xl p-3 border border-gray-100 shadow-sm overflow-hidden"
+            className={`bg-white shadow-sm overflow-hidden relative ${compact ? 'rounded-2xl p-1.5 border border-gray-50' : 'rounded-3xl p-3 border border-gray-100'}`}
         >
+            {/* Flash Sale Badge */}
+            {isFlashSale && (
+                <View className={`absolute z-10 bg-accent-red rounded-lg ${compact ? 'top-1.5 left-1.5 px-1 py-0.5' : 'top-3 left-3 px-2 py-1'}`}>
+                    <Text className={`text-white font-black italic ${compact ? 'text-[6px]' : 'text-[8px]'}`}>⚡ FLASH</Text>
+                </View>
+            )}
             {/* Wishlist Button */}
-            <View className="absolute top-3 right-3 z-10">
+            <View className={`absolute z-10 ${compact ? 'top-1.5 right-1.5' : 'top-3 right-3'}`}>
                 <TouchableOpacity
                     onPress={(e) => {
                         e.stopPropagation();
@@ -50,14 +64,14 @@ export const ProductCard = ({
                     accessibilityLabel={isLiked ? "Remove from wishlist" : "Add to wishlist"}
                     accessibilityRole="button"
                     accessibilityState={{ selected: isLiked, disabled: isWishlistLoading }}
-                    className="bg-white/90 p-2 rounded-full w-9 h-9 items-center justify-center shadow-sm"
+                    className={`bg-white/90 rounded-full items-center justify-center shadow-sm ${compact ? 'w-6 h-6 p-1' : 'w-9 h-9 p-2'}`}
                 >
                     {isWishlistLoading ? (
                         <ActivityIndicator size="small" color="#5E2D87" />
                     ) : (
                         <Ionicons
                             name={isLiked ? "heart" : "heart-outline"}
-                            size={18}
+                            size={compact ? 12 : 18}
                             color={isLiked ? "#EF4444" : "#9CA3AF"}
                         />
                     )}
@@ -65,7 +79,7 @@ export const ProductCard = ({
             </View>
 
             {/* Product Image Area */}
-            <View className="w-full aspect-square bg-gray-50/50 rounded-2xl overflow-hidden mb-3">
+            <View className={`w-full aspect-square bg-gray-50/50 overflow-hidden ${compact ? 'rounded-xl mb-1.5' : 'rounded-2xl mb-3'}`}>
                 <Image
                     source={{ uri: image }}
                     contentFit="cover"
@@ -76,29 +90,36 @@ export const ProductCard = ({
             </View>
 
             {/* Product Info */}
-            <View className="space-y-1">
+            <View className={compact ? "space-y-0" : "space-y-0.5"}>
                 <Text
                     numberOfLines={1}
-                    className="text-sm font-semibold text-gray-800 leading-5"
+                    className={`font-semibold text-gray-800 leading-tight ${compact ? 'text-[10px]' : 'text-xs'}`}
                 >
                     {title}
                 </Text>
 
                 {rating !== undefined && (
                     <View className="flex-row items-center">
-                        <Ionicons name="star" size={12} color="#F59E0B" />
-                        <Text className="text-[11px] text-gray-500 ml-1 font-medium">
+                        <Ionicons name="star" size={compact ? 8 : 10} color="#F59E0B" />
+                        <Text className={`text-gray-500 ml-1 font-medium ${compact ? 'text-[7px]' : 'text-[9px]'}`}>
                             {rating} <Text className="text-gray-400">({reviews})</Text>
                         </Text>
                     </View>
                 )}
 
-                <View className="flex-row items-center justify-between pt-1">
+                <View className={`flex-row items-center justify-between ${compact ? 'pt-0' : 'pt-0.5'}`}>
                     <View>
-                        <Text className="text-[10px] text-gray-400 font-medium">PKR</Text>
-                        <Text className="text-base font-bold text-primary">
-                            {price}
-                        </Text>
+                        <Text className={`text-gray-400 font-medium leading-none ${compact ? 'text-[6px]' : 'text-[8px]'}`}>PKR</Text>
+                        <View className="flex-row items-baseline gap-1">
+                            <Text className={`font-bold text-primary leading-tight ${compact ? 'text-xs' : 'text-sm'}`}>
+                                {salePrice}
+                            </Text>
+                            {isFlashSale && (
+                                <Text className={`text-gray-400 line-through ${compact ? 'text-[6px]' : 'text-[8px]'}`}>
+                                    {price}
+                                </Text>
+                            )}
+                        </View>
                     </View>
 
                     <TouchableOpacity
@@ -110,13 +131,13 @@ export const ProductCard = ({
                         accessibilityLabel={`Add ${title} to cart`}
                         accessibilityRole="button"
                         accessibilityState={{ disabled: isAddingToCart }}
-                        className="bg-primary p-2 rounded-xl shadow-sm"
+                        className={`bg-primary rounded-lg shadow-sm ${compact ? 'p-1' : 'p-1.5'}`}
                         style={{ elevation: 2 }}
                     >
                         {isAddingToCart ? (
                             <ActivityIndicator size="small" color="white" />
                         ) : (
-                            <Ionicons name="add" size={20} color="white" />
+                            <Ionicons name="add" size={compact ? 14 : 20} color="white" />
                         )}
                     </TouchableOpacity>
                 </View>

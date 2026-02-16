@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/clerk-expo";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 const TabsLayout = () => {
   const { isSignedIn, isLoaded } = useAuth();
@@ -13,6 +14,10 @@ const TabsLayout = () => {
 
   // If not signed in, redirect to welcome
   if (!isSignedIn) return <Redirect href={"/"} />;
+
+  // Calculate safe bottom padding for Android devices (where insets.bottom can be 0 even with nav bar)
+  const safeBottom = Platform.OS === "android" ? Math.max(insets.bottom, 15) : insets.bottom;
+  const tabHeight = Platform.OS === "android" ? 65 + safeBottom : 60 + insets.bottom;
 
   return (
     <Tabs
@@ -25,12 +30,12 @@ const TabsLayout = () => {
           elevation: 0, // Android shadow remove
           shadowOpacity: 0.05, // iOS subtle shadow
           shadowRadius: 10,
-          height: 60 + insets.bottom,
+          height: tabHeight,
           paddingTop: 10,
-          paddingBottom: insets.bottom + 10,
+          paddingBottom: safeBottom + 5,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 10,
           fontFamily: "PlusJakartaSans_600SemiBold",
           fontWeight: "600",
         },
@@ -42,6 +47,13 @@ const TabsLayout = () => {
         options={{
           title: "Shop",
           tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: "Dashboard",
+          tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
