@@ -1,7 +1,7 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useState, useEffect } from "react";
 
-const COLORS = ["#5E2D87", "#F59E0B", "#10B981", "#EF4444"];
+const COLORS = ["#5E2D87", "#F59E0B", "#3B82F6", "#10B981", "#EF4444"];
 
 function StatusChart({ data }) {
     const [mounted, setMounted] = useState(false);

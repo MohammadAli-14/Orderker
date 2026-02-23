@@ -80,8 +80,8 @@ function RevenueChart({ data, timeRange, setTimeRange }) {
                         <AreaChart data={processedData}>
                             <defs>
                                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#5E2D87" stopOpacity={isEmpty ? 0.05 : 0.3} />
-                                    <stop offset="95%" stopColor="#5E2D87" stopOpacity={0} />
+                                    <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={isEmpty ? 0.05 : 0.3} />
+                                    <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
@@ -106,7 +106,7 @@ function RevenueChart({ data, timeRange, setTimeRange }) {
                                     border: "1px solid #E5E7EB",
                                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
                                 }}
-                                itemStyle={{ color: "#5E2D87", fontWeight: "bold" }}
+                                itemStyle={{ color: "var(--color-primary)", fontWeight: "bold" }}
                                 formatter={(value) => [formatCurrency(value), "Revenue"]}
                                 labelStyle={{ color: "#6B7280", marginBottom: "4px" }}
                                 active={!isEmpty}
@@ -114,7 +114,7 @@ function RevenueChart({ data, timeRange, setTimeRange }) {
                             <Area
                                 type="monotone"
                                 dataKey="amount"
-                                stroke="#5E2D87"
+                                stroke="var(--color-primary)"
                                 strokeWidth={isEmpty ? 1 : 3}
                                 strokeDasharray={isEmpty ? "5 5" : "0"}
                                 fillOpacity={1}

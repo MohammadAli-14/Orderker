@@ -7,8 +7,8 @@ import { renderToString } from 'react-dom/server';
 const customIcon = L.divIcon({
     html: renderToString(
         <div className="relative flex items-center justify-center">
-            <div className="absolute w-12 h-12 bg-[#5E2D87]/20 rounded-full animate-ping" />
-            <div className="relative w-10 h-10 bg-[#5E2D87] rounded-2xl flex items-center justify-center border-2 border-white shadow-xl rotate-45">
+            <div className="absolute w-12 h-12 bg-primary/20 rounded-full animate-ping" />
+            <div className="relative w-10 h-10 bg-primary rounded-2xl flex items-center justify-center border-2 border-white shadow-xl rotate-45">
                 <MapPin className="w-6 h-6 text-white -rotate-45" />
             </div>
         </div>

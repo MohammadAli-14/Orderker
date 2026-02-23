@@ -120,7 +120,6 @@ export const useLocationDetection = () => {
 
             return null;
         } catch (error) {
-            console.error("💥 Error detecting location:", error);
             Alert.alert("Error", "Failed to detect your location. Please try selecting manually.");
             return null;
         } finally {

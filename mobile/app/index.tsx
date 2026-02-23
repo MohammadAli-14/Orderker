@@ -98,7 +98,7 @@ export default function WelcomeScreen() {
                             contentFit="cover"
                         />
                         <LinearGradient
-                            colors={["transparent", "rgba(94, 45, 135, 0.45)"]}
+                            colors={["transparent", "rgba(94, 45, 135, 0.45)"]} // Matches primary with opacity
                             style={styles.heroGradient}
                         />
                         <View style={styles.heroBadge}>
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
         width: width * 0.8,
         height: width * 0.8,
         borderRadius: width * 0.4,
-        backgroundColor: "#F3E8FF",
+        backgroundColor: "#F3E8FF", // primary-light approximation
         opacity: 0.5,
     },
     mainContent: {
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     heroTagText: {
         fontSize: 10,
         fontWeight: "900",
-        color: "#5E2D87",
+        color: "#5E2D87", // primary
     },
     actionCluster: {
         backgroundColor: "#FFF",
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
         letterSpacing: -0.8,
     },
     titleHighlight: {
-        color: "#5E2D87",
+        color: "#5E2D87", // primary
     },
     subtitle: {
         fontSize: 14,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
         lineHeight: 16,
     },
     footerLink: {
-        color: "#5E2D87",
+        color: "#5E2D87", // primary
         fontWeight: "700",
     },
 });

@@ -6,7 +6,6 @@ import Animated, {
     withSpring,
     withTiming,
     Easing,
-    runOnJS
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +13,9 @@ import { useToast } from '../context/ToastContext';
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
+
+const BRAND_PURPLE = '#5E2D87';
+const BRAND_WHITE = '#FFFFFF';
 
 const Toast: React.FC = () => {
     const { toast, hideToast } = useToast();
@@ -24,7 +26,6 @@ const Toast: React.FC = () => {
 
     useEffect(() => {
         if (toast?.visible) {
-            // Trigger haptic feedback
             if (toast.type === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             else if (toast.type === 'error') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             else Haptics.selectionAsync();
@@ -55,44 +56,34 @@ const Toast: React.FC = () => {
     const getIcon = () => {
         switch (toast.type) {
             case 'success': return 'checkmark-circle';
-            case 'error': return 'alert-circle';
+            case 'error': return 'close-circle';
             default: return 'information-circle';
         }
     };
-
-    const getColors = () => {
-        switch (toast.type) {
-            case 'success': return { bg: '#1DB954', text: '#FFFFFF', icon: '#FFFFFF' }; // Spotify Green
-            case 'error': return { bg: '#FF4B4B', text: '#FFFFFF', icon: '#FFFFFF' };
-            default: return { bg: '#121212', text: '#FFFFFF', icon: '#FFFFFF' }; // Dark Premium
-        }
-    };
-
-    const theme = getColors();
 
     return (
         <Animated.View
             style={[
                 styles.container,
                 animatedStyle,
-                { backgroundColor: theme.bg }
+                { backgroundColor: BRAND_PURPLE }
             ]}
             className="shadow-xl"
         >
             <View className="flex-row items-center p-4">
                 <View style={styles.iconContainer}>
-                    <Ionicons name={getIcon() as any} size={28} color={theme.icon} />
+                    <Ionicons name={getIcon() as any} size={28} color={BRAND_WHITE} />
                 </View>
                 <View className="flex-1 ml-3">
-                    <Text style={styles.title} className="font-bold text-white text-base">
+                    <Text style={[styles.title, { color: BRAND_WHITE }]} className="font-bold text-base">
                         {toast.title}
                     </Text>
-                    <Text style={styles.message} className="text-white/90 text-sm">
+                    <Text style={[styles.message, { color: 'rgba(255,255,255,0.88)' }]} className="text-sm">
                         {toast.message}
                     </Text>
                 </View>
                 <TouchableOpacity onPress={hideToast} className="ml-2">
-                    <Ionicons name="close" size={20} color="white" opacity={0.6} />
+                    <Ionicons name="close" size={20} color={BRAND_WHITE} opacity={0.7} />
                 </TouchableOpacity>
             </View>
         </Animated.View>
@@ -113,12 +104,13 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: 'rgba(255,255,255,0.18)',
         alignItems: 'center',
         justifyContent: 'center',
     },
     title: {
         letterSpacing: 0.5,
+        fontWeight: '700',
     },
     message: {
         lineHeight: 18,

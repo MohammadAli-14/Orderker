@@ -21,7 +21,7 @@ interface ProductCardProps {
     compact?: boolean;
 }
 
-export const ProductCard = ({
+export const ProductCard = React.memo(({
     title,
     price,
     image,
@@ -144,4 +144,4 @@ export const ProductCard = ({
             </View>
         </TouchableOpacity>
     );
-};
+});

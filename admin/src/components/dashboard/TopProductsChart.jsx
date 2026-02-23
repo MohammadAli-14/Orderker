@@ -22,35 +22,51 @@ function TopProductsChart({ data }) {
         <div className="card h-full bg-white border border-base-200 shadow-sm hover:shadow-md transition-shadow duration-200">
             <div className="card-body">
                 <h3 className="card-title text-lg font-bold text-gray-800 mb-4">Top Selling Products</h3>
-                <div style={{ width: '100%', height: 300, minWidth: 0, position: 'relative' }}>
+                <div style={{ width: '100%', height: 350, minWidth: 0, position: 'relative' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data} layout="vertical" margin={{ left: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
+                        <BarChart
+                            data={data}
+                            layout="vertical"
+                            margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                            barGap={8}
+                        >
+                            <defs>
+                                <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0%" stopColor="var(--color-primary)" />
+                                    <stop offset="100%" stopColor="var(--color-secondary)" />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F1F5F9" />
                             <XAxis type="number" hide />
                             <YAxis
                                 dataKey="name"
                                 type="category"
-                                width={100}
-                                tick={{ fill: "#4B5563", fontSize: 11, fontWeight: 500 }}
+                                width={120}
+                                tick={{ fill: "#64748B", fontSize: 12, fontWeight: 600 }}
                                 tickLine={false}
                                 axisLine={false}
+                                interval={0}
                             />
                             <Tooltip
-                                cursor={{ fill: '#F3F4F6' }}
+                                cursor={{ fill: 'rgba(94, 45, 135, 0.04)', radius: 8 }}
                                 contentStyle={{
-                                    backgroundColor: "#fff",
-                                    borderRadius: "8px",
-                                    border: "1px solid #E5E7EB",
-                                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
+                                    backgroundColor: "rgba(255, 255, 255, 0.8)",
+                                    backdropFilter: "blur(12px)",
+                                    borderRadius: "16px",
+                                    border: "1px solid rgba(255, 255, 255, 0.3)",
+                                    boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+                                    padding: "12px"
                                 }}
-                                formatter={(value, name) => [value, name === "sales" ? "Units Sold" : name]}
+                                itemStyle={{ color: "var(--color-primary)", fontWeight: "bold" }}
+                                formatter={(value) => [`${value} Units`, "Sales"]}
                             />
                             <Bar
                                 dataKey="sales"
-                                fill="#5E2D87"
-                                radius={[0, 4, 4, 0]}
-                                barSize={20}
+                                fill="url(#barGradient)"
+                                radius={[0, 10, 10, 0]}
+                                barSize={32}
                                 animationDuration={1500}
+                                animationEasing="ease-in-out"
                             />
                         </BarChart>
                     </ResponsiveContainer>

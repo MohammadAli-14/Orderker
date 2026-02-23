@@ -11,8 +11,9 @@ export const useConfig = () => {
             const { data } = await api.get("/config", { timeout: 5000 }); // 5 second timeout
             return data;
         },
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        retry: 1, // Only retry once to avoid long hangs
+        staleTime: 1000 * 60, // 1 minute
+        refetchInterval: 1000 * 30, // Poll every 30 seconds for live sale sync
+        retry: 1,
         refetchOnWindowFocus: true,
     });
 };

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Orderker",
     "slug": "orderker",
-    "version": "1.0.0",
+    "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/final-icon-foreground.png",
     "scheme": "mobile",
@@ -21,7 +21,9 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.orderker.mobile",
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -82,7 +84,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "24d77201-c823-44ea-bbb5-2924d073d616"
+        "projectId": "f0dea3d4-56a8-4a17-b536-c49ab387a41f"
       }
     }
   }

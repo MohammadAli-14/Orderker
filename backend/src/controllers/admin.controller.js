@@ -2,6 +2,7 @@ import cloudinary from "../config/cloudinary.js";
 import { Product } from "../models/product.model.js";
 import { Order } from "../models/order.model.js";
 import { User } from "../models/user.model.js";
+import { applyFlashSaleLogic } from "../utils/productUtils.js";
 
 export async function createProduct(req, res) {
   try {
@@ -51,7 +52,8 @@ export async function getAllProducts(_, res) {
   try {
     // -1 means in desc order: most recent products first
     const products = await Product.find().sort({ createdAt: -1 });
-    res.status(200).json(products);
+    const processedProducts = await applyFlashSaleLogic(products);
+    res.status(200).json(processedProducts);
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).json({ message: "Internal server error" });

@@ -11,6 +11,10 @@ import { Image } from "expo-image";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LocationSelectionModal } from "../../components/LocationSelectionModal";
 import { HeroCarousel } from "../../components/HeroCarousel";
+import FlashSaleTimer from "../../components/FlashSaleTimer";
+import HomeCategories from "../../components/home/HomeCategories";
+import FlashSaleSection from "../../components/home/FlashSaleSection";
+import { useConfig } from "@/hooks/useConfig";
 import useCart from "@/hooks/useCart";
 import useWishlist from "@/hooks/useWishlist";
 import { useFocusEffect } from "expo-router";
@@ -161,6 +165,7 @@ export default function HomeScreen() {
     const [isLiveLocation, setIsLiveLocation] = useState(false);
     const [locationModalVisible, setLocationModalVisible] = useState(false);
     const [isLocationLoaded, setIsLocationLoaded] = useState(false);
+    const [isSwitching, setIsSwitching] = useState(false);
 
     // API Hooks
     const { data: apiProducts = [], isLoading, isError } = useProducts();
@@ -168,44 +173,13 @@ export default function HomeScreen() {
     const wishlistProps = useWishlist();
     const { isInWishlist, toggleWishlist, isAddingToWishlist, isRemovingFromWishlist } = wishlistProps;
     const { showToast } = useToast();
+    const { data: config } = useConfig();
 
     const { category: categoryParam } = useLocalSearchParams<{ category: string }>();
-
-    const scrollViewRef = useRef<ScrollView>(null);
+    const scrollViewRef = useRef<FlatList>(null);
     const scrollY = useRef(new Animated.Value(0)).current;
     const [popularItemsY, setPopularItemsY] = useState(0);
 
-    // Flash Sale Timer State
-    const [timeLeft, setTimeLeft] = useState({ hours: "02", minutes: "45", seconds: "12" });
-
-    // Live Timer Effect
-    useEffect(() => {
-        const timer = setInterval(() => {
-            const now = new Date();
-            // Simulate a countdown ending at the end of the day or every 4 hours
-            const endOfDay = new Date();
-            endOfDay.setHours(23, 59, 59, 999);
-
-            const diff = endOfDay.getTime() - now.getTime();
-
-            if (diff <= 0) {
-                setTimeLeft({ hours: "00", minutes: "00", seconds: "01" });
-                return;
-            }
-
-            const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-            const m = Math.floor((diff / (1000 * 60)) % 60);
-            const s = Math.floor((diff / 1000) % 60);
-
-            setTimeLeft({
-                hours: h.toString().padStart(2, '0'),
-                minutes: m.toString().padStart(2, '0'),
-                seconds: s.toString().padStart(2, '0')
-            });
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, []);
 
     // Header interpolations
     const headerOpacity = scrollY.interpolate({
@@ -220,11 +194,19 @@ export default function HomeScreen() {
         extrapolate: 'clamp'
     });
 
-    // Auto-scroll to products section when category changes
+    // Adaptive Rendering Effect for Category Switches
+    useEffect(() => {
+        setIsSwitching(true);
+        const timer = setTimeout(() => {
+            setIsSwitching(false);
+        }, 300); // 300ms skip to allow UI thread to breathe
+        return () => clearTimeout(timer);
+    }, [categoryParam]);
+
     useEffect(() => {
         if (categoryParam && scrollViewRef.current && popularItemsY > 0) {
-            scrollViewRef.current.scrollTo({
-                y: popularItemsY - 20,
+            scrollViewRef.current.scrollToOffset({
+                offset: popularItemsY - 20,
                 animated: true,
             });
         }
@@ -258,7 +240,6 @@ export default function HomeScreen() {
                         setTimeout(() => setLocationModalVisible(true), 1500);
                     }
                 } catch (error) {
-                    console.error("Error checking location onboarding:", error);
                     setIsLocationLoaded(true);
                 }
             };
@@ -266,7 +247,7 @@ export default function HomeScreen() {
         }, [user?.id])
     );
 
-    const handleAddToCart = (product: any) => {
+    const handleAddToCart = useCallback((product: any) => {
         addToCart(
             { productId: product._id, quantity: 1 },
             {
@@ -284,15 +265,32 @@ export default function HomeScreen() {
                 },
             }
         );
-    };
+    }, [addToCart, showToast]);
+
+    const handleToggleWishlist = useCallback((id: string) => {
+        toggleWishlist(id);
+    }, [toggleWishlist]);
+
+    const handleProductPress = useCallback((id: string) => {
+        router.push(`/product/${id}` as any);
+    }, [router]);
 
     // Use API products
     const displayProducts = apiProducts;
 
     // Derived Flash Sale products
     const flashSaleProducts = useMemo(() => {
+        // Only show products if flash sale is globally active in config
+        if (!config?.flashSale?.active) return [];
+
+        // If config provides a specific list of product IDs, use that.
+        // Otherwise fallback to checking the isFlashSale flag on individual products.
+        if (config.flashSale.products && config.flashSale.products.length > 0) {
+            return displayProducts.filter(p => config.flashSale.products?.includes(p._id));
+        }
+
         return displayProducts.filter(p => p.isFlashSale);
-    }, [displayProducts]);
+    }, [displayProducts, config]);
 
     // Dynamic Categories derived from products
     const dynamicCategories = useMemo(() => {
@@ -329,12 +327,76 @@ export default function HomeScreen() {
         return result;
     }, [displayProducts, activeCategory, searchText]);
 
-    const handleLocationUpdate = (zone: string, area: string, city?: string, isLive?: boolean) => {
+    const handleLocationUpdate = useCallback((zone: string, area: string, city?: string, isLive?: boolean) => {
         setUserZone(zone);
         setUserArea(area);
         setUserCity(city || null);
         setIsLiveLocation(!!isLive);
-    };
+    }, []);
+
+    const renderItem = useCallback(({ item }: { item: Product }) => (
+        <View className="w-[31.5%] mb-3">
+            <ProductCard
+                title={item.name}
+                price={item.price}
+                rating={item.averageRating}
+                reviews={item.totalReviews}
+                image={item.images?.[0] || "https://via.placeholder.com/150"}
+                isLiked={isInWishlist(item._id)}
+                onWishlistToggle={() => handleToggleWishlist(item._id)}
+                isWishlistLoading={isAddingToWishlist || isRemovingFromWishlist}
+                onAdd={() => handleAddToCart(item)}
+                isAddingToCart={isAddingToCart}
+                onPress={() => handleProductPress(item._id)}
+                isFlashSale={item.isFlashSale}
+                discountPercent={item.discountPercent}
+                compact={true}
+            />
+        </View>
+    ), [isInWishlist, handleToggleWishlist, isAddingToWishlist, isRemovingFromWishlist, handleAddToCart, isAddingToCart, handleProductPress]);
+
+    const keyExtractor = useCallback((item: Product) => item._id, []);
+
+    const ListEmpty = useCallback(() => (
+        <View className="items-center py-12 px-6">
+            <Ionicons name="search-outline" size={48} color="#9CA3AF" />
+            <Text className="text-text-secondary text-center mt-4 text-xs">
+                No products found for "{searchText || activeCategory}"
+            </Text>
+        </View>
+    ), [searchText, activeCategory]);
+
+    const ListHeader = useMemo(() => (
+        <View>
+            <HeroCarousel />
+            <HomeCategories categories={dynamicCategories} activeCategory={activeCategory} />
+            {(config?.flashSale?.active || config?.flashSale?.status === "SCHEDULED") && (
+                <FlashSaleSection
+                    products={flashSaleProducts}
+                    onProductPress={handleProductPress}
+                    targetTime={config?.flashSale?.status === "SCHEDULED" ? config.flashSale.startTime : config?.flashSale?.endTime}
+                    title={config?.flashSale?.title}
+                    status={config?.flashSale?.status}
+                />
+            )}
+
+            <View
+                onLayout={(event) => setPopularItemsY(event.nativeEvent.layout.y)}
+                className="px-6 flex-row justify-between items-center mt-6 mb-4"
+            >
+                <Text className="text-base font-bold text-text-primary">Just For You</Text>
+                <TouchableOpacity onPress={() => router.push("/(tabs)/search" as any)}>
+                    <Text className="text-primary text-xs font-medium">See All</Text>
+                </TouchableOpacity>
+            </View>
+
+            {isLoading && !isSwitching && (
+                <View className="items-center py-8">
+                    <ActivityIndicator size="large" color="#5E2D87" />
+                </View>
+            )}
+        </View>
+    ), [dynamicCategories, activeCategory, flashSaleProducts, isLoading, isSwitching, router, handleProductPress]);
 
     return (
         <SafeScreen>
@@ -343,7 +405,7 @@ export default function HomeScreen() {
                 <Animated.View
                     style={{
                         transform: [{ translateY: headerTranslateY }],
-                        paddingTop: 36, // Moved further upward as requested
+                        paddingTop: 4, // Reduced padding to move header to top
                     }}
                     className="absolute top-0 left-0 right-0 z-50 px-4 pb-1"
                 >
@@ -356,31 +418,31 @@ export default function HomeScreen() {
                         style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 160 }}
                     />
 
-                    <View className="flex-row items-center justify-between space-x-2">
-                        {/* Location (Left) */}
+                    <View className="flex-row items-center gap-x-2">
+                        {/* Location Pill (Left) */}
                         <TouchableOpacity
                             onPress={() => setLocationModalVisible(true)}
-                            className="flex-row items-center bg-white/90 rounded-full px-2.5 py-1.5 border border-white/20 shadow-sm"
-                            style={{ flexShrink: 1, maxWidth: '30%' }}
+                            className="flex-row items-center bg-white/90 rounded-full px-3 py-2 border border-white/20 shadow-sm"
+                            style={{ maxWidth: '38%' }}
                         >
                             <Ionicons
                                 name={isLiveLocation ? "navigate" : "location-sharp"}
-                                size={12}
+                                size={13}
                                 color="#5E2D87"
                             />
                             <Text
-                                className="text-text-primary font-bold text-[10px] ml-1 flex-1"
+                                className="text-text-primary font-bold text-xs ml-1 flex-1"
                                 numberOfLines={1}
                                 ellipsizeMode="tail"
                             >
                                 {!isLocationLoaded ? "..." : (isLiveLocation ? userArea : userArea || userZone)}
                             </Text>
-                            <Ionicons name="chevron-down" size={10} color="#5E2D87" style={{ marginLeft: 2 }} />
+                            <Ionicons name="chevron-down" size={11} color="#5E2D87" style={{ marginLeft: 2 }} />
                         </TouchableOpacity>
 
-                        {/* Search (Center) */}
+                        {/* Search Bar (Stretched - Logo removed as per client request) */}
                         <BlurView intensity={90} tint="light" className="flex-1 rounded-full overflow-hidden flex-row items-center px-4 h-10 border border-white/40 shadow-sm">
-                            <Ionicons name="search" size={14} color="#1F2937" />
+                            <Ionicons name="search" size={15} color="#4B5563" />
                             <SearchInput
                                 value={searchText}
                                 onChangeText={setSearchText}
@@ -390,198 +452,36 @@ export default function HomeScreen() {
                                 hideFilter
                             />
                         </BlurView>
-
-                        {/* Logo (Right) */}
-                        <View className="bg-white/95 rounded-xl px-2.5 py-1.5 border border-white/20 shadow-sm">
-                            <Image
-                                source={require("@/assets/images/orderker-logo-full.png")}
-                                style={{ width: 48, height: 16 }}
-                                contentFit="contain"
-                            />
-                        </View>
                     </View>
                 </Animated.View>
 
-                <Animated.ScrollView
+                <Animated.FlatList
                     ref={scrollViewRef as any}
+                    data={isSwitching ? [] : filteredProducts}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor}
+                    numColumns={3}
+                    ListHeaderComponent={ListHeader}
+                    ListEmptyComponent={!isSwitching ? ListEmpty : null}
                     contentContainerStyle={{ paddingBottom: 100 }}
+                    columnWrapperStyle={{ paddingHorizontal: 16, justifyContent: 'flex-start', gap: 10 }}
                     showsVerticalScrollIndicator={false}
                     onScroll={Animated.event(
                         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                        { useNativeDriver: false }
+                        { useNativeDriver: true }
                     )}
                     scrollEventThrottle={16}
-                >
-                    {/* Hero Banner at Top */}
-                    <HeroCarousel />
-
-                    {/* Categories Section - Now below Carousel */}
-                    <View className="bg-white -mt-6 rounded-t-[32px] pt-6 pb-2">
-                        <View className="px-6 flex-row justify-between items-center mb-4">
-                            <Text className="text-base font-bold text-text-primary">Categories</Text>
-                            <TouchableOpacity onPress={() => router.push("/(tabs)/search")}>
-                                <Text className="text-primary text-xs font-medium">See All</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ paddingLeft: 24, paddingRight: 8 }}
-                            className="flex-row"
-                        >
-                            {dynamicCategories.map((item) => {
-                                const isSelected = activeCategory === item.id;
-                                return (
-                                    <TouchableOpacity
-                                        key={item.id}
-                                        className="mr-5 items-center"
-                                        onPress={() => router.setParams({ category: item.id })}
-                                    >
-                                        <View
-                                            className="w-16 h-16 rounded-3xl items-center justify-center border overflow-hidden"
-                                            style={{
-                                                backgroundColor: isSelected ? "white" : "#F9FAFB",
-                                                borderColor: isSelected ? "#5E2D87" : "#F3F4F6",
-                                                borderWidth: isSelected ? 2 : 1,
-                                                shadowColor: isSelected ? "#5E2D87" : "#000",
-                                                shadowOffset: { width: 0, height: 4 },
-                                                shadowOpacity: isSelected ? 0.2 : 0.05,
-                                                shadowRadius: 8,
-                                                elevation: isSelected ? 4 : 2,
-                                            }}
-                                        >
-                                            <Image
-                                                source={item.image}
-                                                style={{ width: 44, height: 44 }}
-                                                contentFit="contain"
-                                            />
-                                        </View>
-                                        <Text
-                                            className="mt-2 text-[10px] font-medium"
-                                            style={{
-                                                color: isSelected ? "#5E2D87" : "#6B7280",
-                                                fontWeight: isSelected ? "bold" : "500"
-                                            }}
-                                        >
-                                            {item.name}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                    </View>
-
-                    {/* Flash Sale Section */}
-                    <View className="px-6 mt-4">
-                        <View className="flex-row justify-between items-center mb-3">
-                            <View className="flex-row items-center">
-                                <Text className="text-base font-bold text-accent-red italic mr-2">FLASH SALE</Text>
-                                <View className="bg-accent-red px-1.5 py-0.5 rounded flex-row items-center">
-                                    <Ionicons name="time-outline" size={10} color="white" style={{ marginRight: 2 }} />
-                                    <Text className="text-white text-[10px] font-bold">
-                                        {timeLeft.hours}:{timeLeft.minutes}:{timeLeft.seconds}
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row -mx-2 px-2">
-                            {flashSaleProducts.map((item) => {
-                                const salePrice = calculateFinalPrice(item.price, item.isFlashSale, item.discountPercent || 0);
-                                const discount = item.discountPercent || 0;
-                                const stockLeft = item.stock;
-
-                                return (
-                                    <TouchableOpacity
-                                        key={`flash-${item._id}`}
-                                        className="w-32 bg-white rounded-2xl p-3 mr-3 border border-gray-100 shadow-sm"
-                                        style={{ elevation: 2 }}
-                                        onPress={() => router.push(`/product/${item._id}`)}
-                                    >
-                                        <View className="bg-gray-50 rounded-xl p-2 mb-2 w-full aspect-square relative items-center justify-center">
-                                            <Image
-                                                source={{ uri: item.images?.[1] || item.images?.[0] || "https://via.placeholder.com/150" }}
-                                                style={{ width: '85%', height: '85%' }}
-                                                contentFit="contain"
-                                            />
-                                            <View
-                                                className="absolute top-0 left-0 px-2 py-1 rounded-br-xl rounded-tl-xl"
-                                                style={{ backgroundColor: discount >= 50 ? "#EF4444" : "#F59E0B" }}
-                                            >
-                                                <Text className="text-white text-[9px] font-black">-{discount}%</Text>
-                                            </View>
-                                        </View>
-
-                                        <Text className="text-[10px] font-medium text-gray-400 line-through mb-0.5" style={{ textDecorationLine: 'line-through' }}>
-                                            Rs. {item.price}
-                                        </Text>
-                                        <Text className="text-sm font-black text-primary mb-1">Rs. {salePrice}</Text>
-
-                                        <View className="w-full bg-gray-100 h-1.5 rounded-full mt-1 overflow-hidden">
-                                            <View
-                                                className="h-full rounded-full"
-                                                style={{
-                                                    width: `${Math.min(100, (stockLeft / 20) * 100)}%`,
-                                                    backgroundColor: discount >= 50 ? "#EF4444" : "#F59E0B"
-                                                }}
-                                            />
-                                        </View>
-                                        <Text className="text-[8px] text-gray-400 mt-1 font-bold">{stockLeft} LEFT</Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                    </View>
-
-                    {/* Popular Items Section */}
-                    <View
-                        onLayout={(event) => setPopularItemsY(event.nativeEvent.layout.y)}
-                        className="px-6 flex-row justify-between items-center mt-6 mb-4"
-                    >
-                        <Text className="text-base font-bold text-text-primary">Just For You</Text>
-                        <TouchableOpacity onPress={() => router.push("/(tabs)/search")}>
-                            <Text className="text-primary text-xs font-medium">See All</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Loading / Error States */}
-                    {isLoading && (
-                        <View className="items-center py-8">
-                            <ActivityIndicator size="large" color="#5E2D87" />
-                        </View>
-                    )}
-
-                    {/* Products Grid */}
-                    {!isLoading && filteredProducts.length === 0 && (
-                        <View className="items-center py-8 px-6">
-                            <Ionicons name="search-outline" size={48} color="#9CA3AF" />
-                            <Text className="text-text-secondary text-center mt-4 text-xs">No products found for "{searchText || activeCategory}"</Text>
-                        </View>
-                    )}
-
-                    <View className="px-4 flex-row flex-wrap justify-between">
-                        {filteredProducts.map((item) => (
-                            <View key={item._id} className="w-[31.5%] mb-3">
-                                <ProductCard
-                                    title={item.name}
-                                    price={item.price}
-                                    rating={item.averageRating}
-                                    reviews={item.totalReviews}
-                                    image={item.images?.[0] || "https://via.placeholder.com/150"}
-                                    isLiked={isInWishlist(item._id)}
-                                    onWishlistToggle={() => toggleWishlist(item._id)}
-                                    isWishlistLoading={isAddingToWishlist || isRemovingFromWishlist}
-                                    onAdd={() => handleAddToCart(item)}
-                                    isAddingToCart={isAddingToCart}
-                                    onPress={() => router.push(`/product/${item._id}`)}
-                                    isFlashSale={item.isFlashSale}
-                                    discountPercent={item.discountPercent}
-                                    compact={true}
-                                />
-                            </View>
-                        ))}
-                    </View>
-                </Animated.ScrollView>
+                    initialNumToRender={12}
+                    maxToRenderPerBatch={10}
+                    windowSize={7}
+                    updateCellsBatchingPeriod={50}
+                    removeClippedSubviews={true}
+                    getItemLayout={(_, index) => ({
+                        length: 160,
+                        offset: 160 * index,
+                        index,
+                    })}
+                />
 
                 {/* Location Selection Modal */}
                 <LocationSelectionModal

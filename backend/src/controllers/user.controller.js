@@ -143,6 +143,7 @@ export async function removeFromWishlist(req, res) {
 }
 
 import { Product } from "../models/product.model.js";
+import { applyFlashSaleLogic } from "../utils/productUtils.js";
 
 export async function getWishlist(req, res) {
   try {
@@ -157,7 +158,8 @@ export async function getWishlist(req, res) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.status(200).json({ wishlist: user.wishlist });
+    const processedWishlist = await applyFlashSaleLogic(user.wishlist);
+    res.status(200).json({ wishlist: processedWishlist });
   } catch (error) {
     console.error("Error in getWishlist controller:", error);
     res.status(500).json({ error: "Internal server error" });

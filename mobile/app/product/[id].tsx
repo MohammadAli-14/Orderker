@@ -272,7 +272,7 @@ function ErrorUI() {
           This product may have been removed or doesn&apos;t exist
         </Text>
         <TouchableOpacity
-          className="bg-[#5E2D87] rounded-2xl px-6 py-3 mt-6"
+          className="bg-primary rounded-2xl px-6 py-3 mt-6"
           onPress={() => router.back()}
         >
           <Text className="text-white font-bold">Go Back</Text>

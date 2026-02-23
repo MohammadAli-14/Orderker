@@ -11,6 +11,7 @@ import AddressSelectionModal from "@/components/AddressSelectionModal";
 import { useToast } from "@/context/ToastContext";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
+import PhoneVerificationModal from "@/components/PhoneVerificationModal";
 
 const AccountInfoScreen = () => {
     const { user: clerkUser } = useUser();
@@ -23,6 +24,7 @@ const AccountInfoScreen = () => {
     // Phone state
     const [phoneNumber, setPhoneNumber] = useState(profile?.phoneNumber || "");
     const [isEditingPhone, setIsEditingPhone] = useState(false);
+    const [verificationModalVisible, setVerificationModalVisible] = useState(false);
 
     // Name state
     const [name, setName] = useState(clerkUser?.fullName || "");
@@ -63,7 +65,6 @@ const AccountInfoScreen = () => {
             setIsEditingName(false);
             showToast({ title: "Profile Updated", message: "Name updated successfully!", type: "success" });
         } catch (error) {
-            console.error("Failed to update name:", error);
             showToast({ title: "Update Failed", message: "Could not update name. Please try again.", type: "error" });
         } finally {
             setIsSavingName(false);
@@ -275,13 +276,10 @@ const AccountInfoScreen = () => {
                         {!profile?.isPhoneVerified && profile?.phoneNumber && (
                             <TouchableOpacity
                                 style={styles.whatsappVerifyBox}
-                                onPress={() => {
-                                    const message = `Hi OrderKer Support, I'd like to verify my account. ID: ${profile._id}. My registered number is ${profile.phoneNumber}.`;
-                                    Linking.openURL(`whatsapp://send?phone=+923488383679&text=${encodeURIComponent(message)}`);
-                                }}
+                                onPress={() => setVerificationModalVisible(true)}
                             >
                                 <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
-                                <Text style={styles.whatsappVerifyText}>Verify Account via WhatsApp</Text>
+                                <Text style={styles.whatsappVerifyText}>Magic Verify via WhatsApp</Text>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -358,6 +356,15 @@ const AccountInfoScreen = () => {
                     showToast({ title: "Address Switched", message: `Primary address set to ${address.label}`, type: "success" });
                 }}
                 isProcessing={false}
+            />
+
+            <PhoneVerificationModal
+                visible={verificationModalVisible}
+                existingPhone={phoneNumber}
+                onVerified={() => {
+                    setVerificationModalVisible(false);
+                }}
+                onDismiss={() => setVerificationModalVisible(false)}
             />
         </SafeScreen>
     );

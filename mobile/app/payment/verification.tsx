@@ -101,9 +101,7 @@ export default function PaymentVerificationScreen() {
 
         setIsSubmitting(true);
         try {
-            console.log("Uploading receipt...");
             const imageUrl = await uploadReceipt(receiptImage);
-            console.log("Image uploaded:", imageUrl);
 
             const orderData = {
                 orderItems: cartItems.map((item: CartItem) => ({

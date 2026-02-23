@@ -7,6 +7,7 @@ import OrdersPage from "./pages/OrdersPage";
 import OrderChainsPage from "./pages/OrderChainsPage";
 import CustomersPage from "./pages/CustomersPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import SalesManagementPage from "./pages/SalesManagementPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 import PageLoader from "./components/PageLoader";
@@ -76,7 +77,7 @@ function App() {
 
   return (
     <>
-      <Toaster position="top-right" />
+      <Toaster position="top-center" containerStyle={{ zIndex: 99999 }} />
       <Routes>
         {/* If signed in & admin, go straight to dashboard. Otherwise show Landing Page */}
         <Route path="/" element={isSignedIn && user?.publicMetadata?.role === "admin" ? <Navigate to="/dashboard" /> : <LandingPage />} />
@@ -92,6 +93,7 @@ function App() {
         <Route element={isSignedIn ? <DashboardLayout /> : <Navigate to="/login" />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="products" element={<ProductsPage />} />
+          <Route path="sales" element={<SalesManagementPage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="order-chains" element={<OrderChainsPage />} />
           <Route path="customers" element={<CustomersPage />} />

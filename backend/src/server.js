@@ -10,6 +10,7 @@ import { functions, inngest } from "./config/inngest.js";
 import { ENV } from "./config/env.js";
 import { connectDB } from "./config/db.js";
 
+import authRoutes from "./routes/auth.route.js";
 import adminRoutes from "./routes/admin.route.js";
 import userRoutes from "./routes/user.route.js";
 import orderRoutes from "./routes/order.route.js";
@@ -21,7 +22,9 @@ import paymentRoutes from "./routes/payment.route.js";
 import uploadRoutes from "./routes/upload.route.js";
 import configRoutes from "./routes/config.route.js";
 import publicRoutes from "./routes/public.route.js";
+import flashSaleRoutes from "./routes/flashSale.route.js";
 import { fileURLToPath } from "url";
+import { whatsappService } from "./services/whatsapp.service.js";
 
 const app = express();
 
@@ -82,6 +85,7 @@ app.use((req, res, next) => {
 
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
+app.use("/api/auth", authRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/config", configRoutes);
 app.use("/api/admin", adminRoutes);
@@ -91,6 +95,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/flash-sales", flashSaleRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "Success" });
@@ -123,8 +128,17 @@ app.use((err, req, res, next) => {
   });
 });
 
+import { initFlashSaleWorker } from "./workers/flashSale.worker.js";
+
 const startServer = async () => {
   await connectDB();
+
+  // Initialize Background Workers
+  initFlashSaleWorker();
+
+  // Initialize WhatsApp Bot
+  whatsappService.init();
+
   const PORT = ENV.PORT || 3000;
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server is up and running on 0.0.0.0:${PORT}`);

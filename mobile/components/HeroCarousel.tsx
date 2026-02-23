@@ -23,9 +23,7 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 
 const { width } = Dimensions.get("window");
-const CARD_WIDTH = width - 48;
-
-const AnimatedImage = Animated.createAnimatedComponent(Image as any) as any;
+const CARD_WIDTH = width; // Full width for hero slider
 
 const APP_PRIMARY_PURPLE = "#5E2D87";
 
@@ -38,7 +36,7 @@ const BANNERS = [
         image: require("../assets/images/Dalda.jpg"),
         gradientColors: ["rgba(0,0,0,0)", "rgba(0,0,0,0.4)", "rgba(0,0,0,0.7)"] as const,
         imageFit: "cover" as const,
-        category: "Staples", // Real category from backend seeds
+        category: "Staples",
     },
     {
         id: "2",
@@ -48,7 +46,7 @@ const BANNERS = [
         image: require("../assets/images/Milkpak.jpg"),
         gradientColors: ["rgba(0,0,0,0)", "rgba(0,0,0,0.4)", "rgba(0,0,0,0.7)"] as const,
         imageFit: "cover" as const,
-        category: "Dairy & Eggs", // Real category from backend seeds
+        category: "Dairy & Eggs",
     },
     {
         id: "3",
@@ -58,7 +56,7 @@ const BANNERS = [
         image: require("../assets/images/Olpers.jpg"),
         gradientColors: ["rgba(0,0,0,0)", "rgba(0,0,0,0.4)", "rgba(0,0,0,0.7)"] as const,
         imageFit: "cover" as const,
-        category: "Dairy & Eggs", // Real category from backend seeds
+        category: "Dairy & Eggs",
     },
 ];
 
@@ -74,22 +72,18 @@ const CarouselCard = ({
     onPress: (category: string) => void
 }) => {
     const cardStyle = useAnimatedStyle(() => {
-        const scale = interpolate(
-            scrollX.value,
-            [(index - 1) * CARD_WIDTH, index * CARD_WIDTH, (index + 1) * CARD_WIDTH],
-            [0.92, 1, 0.92],
-            Extrapolation.CLAMP
-        );
-        return {
-            transform: [{ scale }],
-        };
+        return { transform: [{ scale: 1 }] };
     });
 
     const imageSource = typeof item.image === 'string' ? { uri: item.image } : item.image;
 
     return (
         <Animated.View style={[styles.bannerContainer, cardStyle]}>
-            <View style={styles.card}>
+            <TouchableOpacity
+                style={styles.card}
+                activeOpacity={0.95}
+                onPress={() => onPress(item.category)}
+            >
                 {/* Full Background Image */}
                 <Image
                     source={imageSource}
@@ -98,7 +92,7 @@ const CarouselCard = ({
                     transition={500}
                 />
 
-                {/* Gradient Overlay for Text Readability */}
+                {/* Gradient Overlay */}
                 <LinearGradient
                     colors={item.gradientColors}
                     start={{ x: 0.5, y: 0 }}
@@ -106,33 +100,20 @@ const CarouselCard = ({
                     style={StyleSheet.absoluteFill}
                 />
 
-                {/* Text Overlay - Modern Design */}
+                {/* Text Overlay */}
                 <View style={styles.textOverlay}>
-                    {/* Badge */}
                     <View style={styles.badge}>
                         <Text style={styles.badgeText}>{item.badge}</Text>
                     </View>
-
-                    {/* Title */}
                     <Text style={styles.title} numberOfLines={2}>
                         {item.title}
                     </Text>
-
-                    {/* Subtitle */}
                     <Text style={styles.subtitle}>
                         {item.subtitle}
                     </Text>
-
-                    {/* CTA Button */}
-                    <TouchableOpacity
-                        style={styles.button}
-                        activeOpacity={0.8}
-                        onPress={() => onPress(item.category)}
-                    >
-                        <Text style={styles.buttonText}>Shop Now</Text>
-                    </TouchableOpacity>
+                    {/* Shop Now button REMOVED as per client request */}
                 </View>
-            </View>
+            </TouchableOpacity>
         </Animated.View>
     );
 };
@@ -144,10 +125,7 @@ export const HeroCarousel = () => {
     const router = useRouter();
 
     const handlePress = useCallback((category: string) => {
-        // Impact Light provides a premium tactile response for buttons
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-        // Update local search params for home screen
         router.setParams({ category });
     }, [router]);
 
@@ -158,7 +136,6 @@ export const HeroCarousel = () => {
             if (nextIndex >= BANNERS.length) {
                 nextIndex = 0;
             }
-
             flatListRef.current?.scrollToIndex({
                 index: nextIndex,
                 animated: true,
@@ -206,34 +183,7 @@ export const HeroCarousel = () => {
                 decelerationRate="fast"
                 contentContainerStyle={styles.flatListContent}
             />
-
-            {/* Pagination dots */}
-            <View style={styles.pagination}>
-                {BANNERS.map((_, index) => {
-                    const dotStyle = useAnimatedStyle(() => {
-                        const width = interpolate(
-                            scrollX.value,
-                            [(index - 1) * CARD_WIDTH, index * CARD_WIDTH, (index + 1) * CARD_WIDTH],
-                            [8, 28, 8],
-                            Extrapolation.CLAMP
-                        );
-                        const opacity = interpolate(
-                            scrollX.value,
-                            [(index - 1) * CARD_WIDTH, index * CARD_WIDTH, (index + 1) * CARD_WIDTH],
-                            [0.3, 1, 0.3],
-                            Extrapolation.CLAMP
-                        );
-                        return { width, opacity };
-                    });
-
-                    return (
-                        <Animated.View
-                            key={index}
-                            style={[styles.dot, dotStyle]}
-                        />
-                    );
-                })}
-            </View>
+            {/* Pagination dots REMOVED as per client request */}
         </View>
     );
 };
@@ -243,15 +193,15 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     flatListContent: {
-        paddingHorizontal: 0, // Bleed to edges for hero look
+        paddingHorizontal: 0,
     },
     bannerContainer: {
-        width: width, // Full width for hero
-        height: 180, // Reduced from 250 for better visibility
+        width: width,
+        height: 180,
     },
     card: {
         flex: 1,
-        borderRadius: 0, // No border radius for top hero
+        borderRadius: 0,
         overflow: "hidden",
         position: "relative",
     },
@@ -260,16 +210,16 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        padding: 16, // Reduced from 24
+        padding: 16,
         zIndex: 10,
     },
     badge: {
         backgroundColor: APP_PRIMARY_PURPLE,
-        paddingHorizontal: 10, // Reduced from 14
-        paddingVertical: 4, // Reduced from 6
+        paddingHorizontal: 10,
+        paddingVertical: 4,
         borderRadius: 20,
         alignSelf: "flex-start",
-        marginBottom: 8, // Reduced from 12
+        marginBottom: 8,
         shadowColor: APP_PRIMARY_PURPLE,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
@@ -277,17 +227,17 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     badgeText: {
-        fontSize: 9, // Reduced from 10
+        fontSize: 9,
         fontWeight: "900",
         letterSpacing: 0.6,
         textTransform: "uppercase",
         color: "#FFFFFF",
     },
     title: {
-        fontSize: 18, // Reduced from 22
+        fontSize: 18,
         fontWeight: "900",
-        lineHeight: 22, // Reduced from 26
-        marginBottom: 2, // Reduced from 4
+        lineHeight: 22,
+        marginBottom: 2,
         letterSpacing: 0.2,
         color: "#FFFFFF",
         textShadowColor: 'rgba(0, 0, 0, 0.8)',
@@ -295,44 +245,14 @@ const styles = StyleSheet.create({
         textShadowRadius: 8,
     },
     subtitle: {
-        fontSize: 11, // Reduced from 14
+        fontSize: 11,
         fontWeight: "700",
-        marginBottom: 12, // Reduced from 16
+        marginBottom: 4,
         color: "#FFFFFF",
         opacity: 0.95,
         textShadowColor: 'rgba(0, 0, 0, 0.6)',
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 4,
         letterSpacing: 0.3,
-    },
-    button: {
-        backgroundColor: APP_PRIMARY_PURPLE,
-        paddingHorizontal: 20, // Reduced from 24
-        paddingVertical: 8, // Reduced from 12
-        borderRadius: 24,
-        alignSelf: "flex-start",
-        shadowColor: APP_PRIMARY_PURPLE,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-        elevation: 8,
-    },
-    buttonText: {
-        fontSize: 11, // Reduced from 13
-        fontWeight: "800",
-        color: '#FFFFFF',
-        letterSpacing: 0.4,
-    },
-    pagination: {
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-        marginTop: 12, // Reduced from 20
-        gap: 6, // Reduced from 8
-    },
-    dot: {
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: APP_PRIMARY_PURPLE,
     },
 });

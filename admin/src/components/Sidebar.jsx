@@ -6,13 +6,15 @@ import {
   SettingsIcon,
   ListOrderedIcon,
   Link2,
-  LogOutIcon
+  LogOutIcon,
+  ZapIcon
 } from "lucide-react";
 import { useUser, useClerk } from "@clerk/clerk-react";
 
 const sidebarLinks = [
   { href: "/", label: "Dashboard", icon: LayoutDashboardIcon },
   { href: "/products", label: "Products", icon: ShoppingBagIcon },
+  { href: "/sales", label: "Sales Management", icon: ZapIcon },
   { href: "/orders", label: "Orders", icon: ListOrderedIcon },
   { href: "/order-chains", label: "Order Chains", icon: Link2 },
   { href: "/customers", label: "Customers", icon: UsersIcon },

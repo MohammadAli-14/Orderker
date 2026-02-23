@@ -115,4 +115,13 @@ export interface AppConfig {
     enable_jazzcash: boolean;
     enable_easypaisa: boolean;
   };
+  flashSale: {
+    active: boolean;
+    status?: "ACTIVE" | "SCHEDULED" | "NONE";
+    startTime?: string;
+    endTime?: string;
+    title?: string;
+    bannerImage?: string;
+    products?: string[];
+  };
 }

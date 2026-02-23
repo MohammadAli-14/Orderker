@@ -7,6 +7,7 @@ import * as Sentry from "@sentry/react-native";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { ToastProvider } from "@/context/ToastContext";
 import Toast from "@/components/Toast";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 Sentry.init({
   dsn: "https://fb6731b90610cc08333e6c16ffac5724@o4509813037137920.ingest.de.sentry.io/4510451611205712",
@@ -82,6 +83,18 @@ if (!clerkPublishableKey) {
 }
 
 import ConfigGuardian from "@/components/ConfigGuardian";
+import { useConfig } from "@/hooks/useConfig";
+import FlashSaleBanner from "@/components/FlashSaleBanner";
+
+const ConfigConsumer = () => {
+  const { data: config } = useConfig();
+  const flashSale = config?.flashSale;
+
+  if (!flashSale || (!flashSale.active && flashSale.status !== "SCHEDULED")) return null;
+
+  // Sticky banner removed as per UI revamp request
+  return null;
+};
 
 export default Sentry.wrap(function RootLayout() {
   const [loaded, error] = useFonts({
@@ -107,11 +120,14 @@ export default Sentry.wrap(function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <StripeProvider publishableKey={stripePublishableKey}>
           <ToastProvider>
-            <ConfigGuardian>
-              <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FFFFFF" } }} />
-              </View>
-            </ConfigGuardian>
+            <ErrorBoundary>
+              <ConfigGuardian>
+                <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+                  <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FFFFFF" } }} />
+                  <ConfigConsumer />
+                </View>
+              </ConfigGuardian>
+            </ErrorBoundary>
             <Toast />
           </ToastProvider>
         </StripeProvider>

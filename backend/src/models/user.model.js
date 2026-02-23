@@ -72,6 +72,16 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    lastVerificationError: {
+      type: String,
+      default: "",
+    },
+    whatsappLid: {
+      type: String,
+      default: "",
+      unique: true,
+      sparse: true,
+    },
     addresses: [addressSchema],
     wishlist: [
       {

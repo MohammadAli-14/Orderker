@@ -158,7 +158,7 @@ const ProfileScreen = () => {
 
         {/* VERSION INFO */}
         <View className="mx-6 items-center">
-          <Text className="text-text-tertiary text-xs">OrderKer v1.0.0</Text>
+          <Text className="text-text-tertiary text-xs">OrderKer v3.0</Text>
           <Text className="text-text-tertiary text-xs mt-1">Made with ❤️ in Karachi</Text>
         </View>
       </ScrollView>

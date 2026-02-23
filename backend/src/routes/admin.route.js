@@ -11,13 +11,13 @@ import {
   verifyUser,
 } from "../controllers/admin.controller.js";
 import { getAnalytics, getCustomerChains } from "../controllers/analytics.controller.js";
-import { adminOnly, protectRoute } from "../middleware/auth.middleware.js";
+import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
 import { upload } from "../middleware/multer.middleware.js";
 
 const router = Router();
 
 // optimization - DRY
-router.use(protectRoute, adminOnly);
+router.use(protectRoute, adminRoute);
 
 router.post("/products", upload.array("images", 3), createProduct);
 router.get("/products", getAllProducts);

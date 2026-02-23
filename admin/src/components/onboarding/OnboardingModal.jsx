@@ -21,7 +21,7 @@ function OnboardingModal() {
     const steps = [
         {
             title: "Welcome to Orderker Admin",
-            description: "Your new command center for managing your e-commerce business using the modern White + Purple design system.",
+            description: "Your new command center for managing your e-commerce business using the modern design system.",
             icon: <LayoutDashboard className="size-12 text-primary" />,
             action: "Get Started",
         },

@@ -60,7 +60,7 @@ export function ConfirmModal({
                             <Ionicons
                                 name={isDestructive ? "trash-outline" : "alert-circle-outline"}
                                 size={28}
-                                color={isDestructive ? "#EF4444" : "#5E2D87"}
+                                color="#5E2D87"
                             />
                         </View>
                     </View>
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     destructiveCircle: {
-        backgroundColor: "#FEE2E2",
+        backgroundColor: "#F3E8FF",
     },
     infoCircle: {
         backgroundColor: "#F3E8FF",
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     destructiveButton: {
-        backgroundColor: "#EF4444",
+        backgroundColor: "#5E2D87",
     },
     infoButton: {
         backgroundColor: "#5E2D87",

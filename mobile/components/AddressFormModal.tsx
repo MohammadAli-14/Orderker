@@ -153,7 +153,6 @@ const AddressFormModal = ({
                 <Text className="text-text-primary font-semibold mb-2">Phone Number</Text>
                 <TextInput
                   className="bg-surface text-text-primary px-4 py-4 rounded-2xl text-base"
-                  placeholder="+1 (555) 123-4567"
                   placeholderTextColor="#666"
                   value={addressForm.phoneNumber}
                   onChangeText={(text) => onFormChange({ ...addressForm, phoneNumber: text })}

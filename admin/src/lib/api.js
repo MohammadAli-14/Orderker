@@ -64,3 +64,22 @@ export const analyticsApi = {
     return data;
   },
 };
+
+export const flashSaleApi = {
+  getAll: async () => {
+    const { data } = await axiosInstance.get("/flash-sales/admin");
+    return data;
+  },
+  create: async (payload) => {
+    const { data } = await axiosInstance.post("/flash-sales", payload);
+    return data;
+  },
+  update: async ({ id, payload }) => {
+    const { data } = await axiosInstance.put(`/flash-sales/${id}`, payload);
+    return data;
+  },
+  delete: async (id) => {
+    const { data } = await axiosInstance.delete(`/flash-sales/${id}`);
+    return data;
+  },
+};
