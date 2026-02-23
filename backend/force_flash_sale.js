@@ -1,6 +1,14 @@
 import mongoose from 'mongoose';
+import * as dotenv from 'dotenv';
 
-const DB_URL = "mongodb+srv://rajaali8383679_db_user:XgeJnsk1XZWiSNF3@cluster0.w9hxopc.mongodb.net/?appName=Cluster0";
+dotenv.config();
+
+const DB_URL = process.env.DB_URL;
+
+if (!DB_URL) {
+    console.error("❌ CRITICAL: DB_URL is not defined in the .env file.");
+    process.exit(1);
+}
 
 // Minimal schema definition to avoid import issues
 const flashSaleSchema = new mongoose.Schema({

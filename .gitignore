@@ -11,3 +11,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .metro-health-check*
+
+# WhatsApp Session Files (Do NOT Commit!)
+backend/whatsapp_auth/
