@@ -9,10 +9,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.join(__dirname, '.env') });
+const DB_URL = process.env.DB_URL || process.env.MONGODB_URI;
 
 async function run() {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
+        if (!DB_URL) throw new Error("No DB_URL found in .env");
+        await mongoose.connect(DB_URL);
         console.log('Connected to DB');
 
         const orders = await Order.find({}).limit(5).lean();

@@ -8,6 +8,7 @@ import OrderChainsPage from "./pages/OrderChainsPage";
 import CustomersPage from "./pages/CustomersPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SalesManagementPage from "./pages/SalesManagementPage";
+import WhatsAppPage from "./pages/WhatsAppPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 import PageLoader from "./components/PageLoader";
@@ -98,6 +99,7 @@ function App() {
           <Route path="order-chains" element={<OrderChainsPage />} />
           <Route path="customers" element={<CustomersPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="whatsapp" element={<WhatsAppPage />} />
         </Route>
       </Routes>
     </>

@@ -21,6 +21,7 @@ import Animated, {
 
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import useProducts from "@/hooks/useProducts";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width; // Full width for hero slider
@@ -36,7 +37,7 @@ const BANNERS = [
         image: require("../assets/images/Dalda.jpg"),
         gradientColors: ["rgba(0,0,0,0)", "rgba(0,0,0,0.4)", "rgba(0,0,0,0.7)"] as const,
         imageFit: "cover" as const,
-        category: "Staples",
+        searchTerm: "Dalda",
     },
     {
         id: "2",
@@ -46,7 +47,7 @@ const BANNERS = [
         image: require("../assets/images/Milkpak.jpg"),
         gradientColors: ["rgba(0,0,0,0)", "rgba(0,0,0,0.4)", "rgba(0,0,0,0.7)"] as const,
         imageFit: "cover" as const,
-        category: "Dairy & Eggs",
+        searchTerm: "Milk Pak",
     },
     {
         id: "3",
@@ -56,7 +57,7 @@ const BANNERS = [
         image: require("../assets/images/Olpers.jpg"),
         gradientColors: ["rgba(0,0,0,0)", "rgba(0,0,0,0.4)", "rgba(0,0,0,0.7)"] as const,
         imageFit: "cover" as const,
-        category: "Dairy & Eggs",
+        searchTerm: "Olper",
     },
 ];
 
@@ -69,7 +70,7 @@ const CarouselCard = ({
     item: typeof BANNERS[0],
     index: number,
     scrollX: SharedValue<number>,
-    onPress: (category: string) => void
+    onPress: (searchTerm: string) => void
 }) => {
     const cardStyle = useAnimatedStyle(() => {
         return { transform: [{ scale: 1 }] };
@@ -81,8 +82,8 @@ const CarouselCard = ({
         <Animated.View style={[styles.bannerContainer, cardStyle]}>
             <TouchableOpacity
                 style={styles.card}
-                activeOpacity={0.95}
-                onPress={() => onPress(item.category)}
+                activeOpacity={0.9}
+                onPress={() => onPress(item.searchTerm)}
             >
                 {/* Full Background Image */}
                 <Image
@@ -123,11 +124,27 @@ export const HeroCarousel = () => {
     const [activeIndex, setActiveIndex] = useState(0);
     const flatListRef = useRef<any>(null);
     const router = useRouter();
+    const { data: apiProducts = [] } = useProducts();
 
-    const handlePress = useCallback((category: string) => {
+    const handlePress = useCallback((searchTerm: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.setParams({ category });
-    }, [router]);
+
+        let match = null;
+        if (apiProducts && apiProducts.length > 0) {
+            // Try a flexible name match
+            match = apiProducts.find((p) => {
+                const pName = p.name ? p.name.toLowerCase() : "";
+                const term = searchTerm.toLowerCase();
+                return pName.includes(term);
+            });
+        }
+
+        if (match) {
+            router.push(`/product/${match._id}` as any);
+        } else {
+            router.push(`/(tabs)/search?q=${encodeURIComponent(searchTerm)}` as any);
+        }
+    }, [router, apiProducts]);
 
     // Auto-scroll logic
     useEffect(() => {

@@ -83,3 +83,18 @@ export const flashSaleApi = {
     return data;
   },
 };
+
+export const whatsappApi = {
+  getStatus: async () => {
+    const { data } = await axiosInstance.get("/whatsapp/status");
+    return data;
+  },
+  getQr: async () => {
+    const { data } = await axiosInstance.get("/whatsapp/qr");
+    return data;
+  },
+  restart: async () => {
+    const { data } = await axiosInstance.post("/whatsapp/restart");
+    return data;
+  },
+};

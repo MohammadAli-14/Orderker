@@ -403,17 +403,19 @@ export default function HomeScreen() {
             <View className="flex-1 bg-background">
                 {/* Integrated Row Header */}
                 <Animated.View
+                    pointerEvents="box-none"
                     style={{
                         transform: [{ translateY: headerTranslateY }],
                         paddingTop: 4, // Reduced padding to move header to top
                     }}
                     className="absolute top-0 left-0 right-0 z-50 px-4 pb-1"
                 >
-                    <Animated.View style={{ opacity: headerOpacity, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <Animated.View pointerEvents="none" style={{ opacity: headerOpacity, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
                         <BlurView intensity={100} tint="light" style={{ flex: 1 }} />
                     </Animated.View>
 
                     <LinearGradient
+                        pointerEvents="none"
                         colors={['rgba(0,0,0,0.6)', 'transparent']}
                         style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 160 }}
                     />

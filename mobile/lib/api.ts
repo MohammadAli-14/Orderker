@@ -3,7 +3,7 @@ import axios from "axios";
 import { useEffect } from "react";
 
 // For local development with physical device (change to your laptop's IP):
-const API_URL = "http://192.168.10.7:3005/api";
+const API_URL = "http://192.168.18.89:3005/api";
 
 // For local development with simulator:
 // const API_URL = "http://localhost:3000/api";

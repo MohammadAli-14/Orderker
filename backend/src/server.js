@@ -23,6 +23,7 @@ import uploadRoutes from "./routes/upload.route.js";
 import configRoutes from "./routes/config.route.js";
 import publicRoutes from "./routes/public.route.js";
 import flashSaleRoutes from "./routes/flashSale.route.js";
+import whatsappRoutes from "./routes/whatsapp.route.js";
 import { fileURLToPath } from "url";
 import { whatsappService } from "./services/whatsapp.service.js";
 
@@ -96,6 +97,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/flash-sales", flashSaleRoutes);
+app.use("/api/whatsapp", whatsappRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "Success" });
@@ -140,9 +142,31 @@ const startServer = async () => {
   whatsappService.init();
 
   const PORT = ENV.PORT || 3000;
-  app.listen(PORT, "0.0.0.0", () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server is up and running on 0.0.0.0:${PORT}`);
   });
+
+  // Graceful shutdown hooks for nodemon restarts and cloud deployments
+  const gracefulShutdown = async (signal) => {
+    console.log(`\n[Server] Received ${signal}. Shutting down gracefully...`);
+    await whatsappService.cleanup();
+    server.close(() => {
+      console.log("[Server] Closed out remaining connections.");
+      process.exit(0);
+    });
+
+    // Fallback force exit
+    setTimeout(() => {
+      console.error("[Server] Could not close connections in time, forcefully shutting down");
+      process.exit(1);
+    }, 10000);
+  };
+
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // Nodemon specific
 };
 
 startServer();
+
+// Trigger Restart

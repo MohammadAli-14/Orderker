@@ -7,7 +7,8 @@ import {
   ListOrderedIcon,
   Link2,
   LogOutIcon,
-  ZapIcon
+  ZapIcon,
+  MessageCircleIcon
 } from "lucide-react";
 import { useUser, useClerk } from "@clerk/clerk-react";
 
@@ -19,6 +20,7 @@ const sidebarLinks = [
   { href: "/order-chains", label: "Order Chains", icon: Link2 },
   { href: "/customers", label: "Customers", icon: UsersIcon },
   { href: "/analytics", label: "Analytics", icon: SettingsIcon },
+  { href: "/whatsapp", label: "WhatsApp Bot", icon: MessageCircleIcon },
 ];
 
 function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {

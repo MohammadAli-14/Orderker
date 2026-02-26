@@ -38,14 +38,27 @@ export default function SearchScreen() {
     const { isInWishlist, toggleWishlist, isAddingToWishlist, isRemovingFromWishlist } = useWishlist();
     const { showToast } = useToast();
 
-    // Handle initial category from params
+    // Handle initial category/search from params
     useEffect(() => {
         if (params.category) {
             const cat = Array.isArray(params.category) ? params.category[0] : params.category;
             setSelectedCategory(cat);
-            // Don't modify search text, let category filter handle it
         }
-    }, [params.category]);
+        if (params.q) {
+            const query = Array.isArray(params.q) ? params.q[0] : params.q;
+            setSearchText(query);
+
+            // Auto-save this as a recent search
+            const savedStr = AsyncStorage.getItem(RECENT_SEARCHES_KEY).then(saved => {
+                let recents = saved ? JSON.parse(saved) : ["Milk", "Lassi", "Eggs", "Chips"];
+                if (!recents.includes(query)) {
+                    recents = [query, ...recents].slice(0, 10);
+                    AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recents));
+                    setRecentSearches(recents);
+                }
+            });
+        }
+    }, [params.category, params.q]);
 
     // Load recent searches on focus
     const loadRecentSearches = useCallback(async () => {

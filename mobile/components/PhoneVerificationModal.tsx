@@ -27,7 +27,7 @@ interface Props {
     onDismiss: () => void;
 }
 
-type Step = 'phone' | 'otp';
+type Step = 'phone' | 'otp' | 'success';
 
 const PhoneVerificationModal: React.FC<Props> = ({
     visible,
@@ -178,10 +178,8 @@ const PhoneVerificationModal: React.FC<Props> = ({
                 // Refresh Clerk user
                 await user?.reload();
 
-                // Safety: Close modal after a small delay to avoid race conditions/crashes
-                setTimeout(() => {
-                    onVerified();
-                }, 500);
+                // Transition to success state instead of closing
+                setStep('success');
             } else if (userData.lastVerificationError) {
                 const errMsg = userData.lastVerificationError;
                 if (error !== errMsg) {
@@ -227,12 +225,31 @@ const PhoneVerificationModal: React.FC<Props> = ({
                             <Text style={styles.subtitle}>
                                 {step === 'phone'
                                     ? 'Verify your number instantly via WhatsApp - No typing codes needed!'
-                                    : `We've initiated verification for ${phone}. If you sent the message, you're all set.`}
+                                    : step === 'otp'
+                                        ? `We've initiated verification for ${phone}. If you sent the message, you're all set.`
+                                        : 'Mission Accomplished!'}
                             </Text>
                         </View>
 
                         {/* Input */}
-                        {step === 'phone' ? (
+                        {step === 'success' ? (
+                            <View style={styles.successContainer}>
+                                <View style={styles.successIconBox}>
+                                    <Ionicons name="checkmark" size={48} color="white" />
+                                </View>
+                                <Text style={styles.successTitle}>Verified Successfully!</Text>
+                                <Text style={styles.successSubtitle}>
+                                    Your WhatsApp number <Text style={{ fontWeight: 'bold', color: '#111827' }}>{phone}</Text> is now securely linked to your account.
+                                </Text>
+                                <TouchableOpacity
+                                    style={styles.doneButton}
+                                    onPress={onVerified}
+                                    activeOpacity={0.85}
+                                >
+                                    <Text style={styles.buttonText}>Continue</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : step === 'phone' ? (
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}>Phone Number</Text>
                                 <TextInput
@@ -497,6 +514,51 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: '#F5F3FF',
     },
+    successContainer: {
+        alignItems: 'center',
+        paddingVertical: 10,
+        marginBottom: 20,
+    },
+    successIconBox: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#1DB954', // Distinct success green, or we can use PURPLE here. Let's stick to brand requested.
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
+        shadowColor: '#1DB954',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    successTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#111827',
+        marginBottom: 8,
+    },
+    successSubtitle: {
+        fontSize: 15,
+        color: '#6B7280',
+        textAlign: 'center',
+        lineHeight: 22,
+        paddingHorizontal: 10,
+        marginBottom: 32,
+    },
+    doneButton: {
+        backgroundColor: PURPLE,
+        borderRadius: 16,
+        paddingVertical: 16,
+        alignItems: 'center',
+        width: '100%',
+        shadowColor: PURPLE,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+        elevation: 6,
+    }
 });
 
 export default PhoneVerificationModal;

@@ -1,42 +1,120 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from "@whiskeysockets/baileys";
+import { makeWASocket, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from "@whiskeysockets/baileys";
 import { USyncQuery } from "@whiskeysockets/baileys/lib/WAUSync/USyncQuery.js";
 import { USyncUser } from "@whiskeysockets/baileys/lib/WAUSync/USyncUser.js";
 import { Boom } from "@hapi/boom";
 import qrcodeTerminal from "qrcode-terminal";
 import QRCode from "qrcode";
 import pino from "pino";
-import { WhatsAppSession } from "../models/whatsapp-session.model.js";
+import { WhatsAppAuth } from "../models/whatsapp-auth.model.js";
 import { User } from "../models/user.model.js";
 import fs from "fs";
 import path from "path";
 import { notificationService } from "./notification.service.js";
+import { useMongoDBAuthState } from "./useMongoDBAuthState.js";
+
+// Connection status constants
+const STATUS = {
+    DISCONNECTED: "disconnected",
+    CONNECTING: "connecting",
+    WAITING_QR: "waiting_qr",
+    CONNECTED: "connected",
+    STOPPED: "stopped",
+};
+
+// Reconnect configuration
+const RECONNECT = {
+    BASE_DELAY: 5000,
+    MAX_DELAY: 30000,
+    MAX_QR_TIMEOUTS: 5,
+    MAX_440_RETRIES: 3,
+    BACKOFF_MULTIPLIER: 2,
+};
 
 class WhatsAppService {
     constructor() {
         this.sock = null;
-        this.sessionDir = process.env.WHATSAPP_SESSION_DIR || "./whatsapp_auth";
         this.logger = pino({ level: "silent" });
+        this.isShuttingDown = false;
+
+        // Production state tracking
+        this.status = STATUS.DISCONNECTED;
+        this.lastQrBase64 = null;
+        this.lastQrTimestamp = null;
+        this.qrTimeoutCount = 0;
+        this.reconnectAttempts = 0;
+        this.conflict440Count = 0;
+        this.connectedAt = null;
+        this.lastError = null;
+        this.stableResetTimer = null;
+    }
+
+    getStatus() {
+        return {
+            status: this.status,
+            connectedAt: this.connectedAt,
+            qrAvailable: !!this.lastQrBase64,
+            qrTimeoutCount: this.qrTimeoutCount,
+            reconnectAttempts: this.reconnectAttempts,
+            lastError: this.lastError,
+            uptime: this.connectedAt
+                ? Math.floor((Date.now() - this.connectedAt) / 1000)
+                : null,
+        };
+    }
+
+    getQrCode() {
+        if (!this.lastQrBase64) return null;
+        return {
+            qr: this.lastQrBase64,
+            timestamp: this.lastQrTimestamp,
+            expiresIn: 20,
+        };
+    }
+
+    getReconnectDelay() {
+        const delay = Math.min(
+            RECONNECT.BASE_DELAY * Math.pow(RECONNECT.BACKOFF_MULTIPLIER, this.reconnectAttempts),
+            RECONNECT.MAX_DELAY
+        );
+        return delay;
+    }
+
+    // Destroy old socket completely before creating a new one
+    destroySocket() {
+        if (this.sock) {
+            try {
+                this.sock.ev.removeAllListeners();
+                this.sock.ws.close();
+                this.sock.end(undefined);
+            } catch (err) {
+                // socket already dead, safe to ignore
+            }
+            this.sock = null;
+        }
     }
 
     async init() {
+        if (this.isShuttingDown) return;
+
+        // CRITICAL: destroy old socket first to prevent 440 (Connection Replaced)
+        this.destroySocket();
+
+        this.status = STATUS.CONNECTING;
+        this.lastQrBase64 = null;
         console.log("[WhatsAppService] 🚀 Initializing WhatsApp Bot...");
 
-        // Ensure session directory exists for Baileys to use as initial cache
-        if (!fs.existsSync(this.sessionDir)) {
-            fs.mkdirSync(this.sessionDir, { recursive: true });
-        }
-
-        // 1. Try to restore session from MongoDB if the directory is empty (e.g. on Render restart)
-        await this.syncFromDB();
-
-        const { state, saveCreds } = await useMultiFileAuthState(this.sessionDir);
-        const { version, isLatest } = await fetchLatestBaileysVersion();
+        const { state, saveCreds } = await useMongoDBAuthState("default");
+        const { version } = await fetchLatestBaileysVersion();
 
         this.sock = makeWASocket({
             version,
-            auth: state,
+            auth: {
+                creds: state.creds,
+                keys: makeCacheableSignalKeyStore(state.keys, this.logger),
+            },
             logger: this.logger,
             browser: ["OrderKer Bot", "Chrome", "4.0.0"],
+            syncFullHistory: false,
             patchMessageBeforeSending: (message) => {
                 const requiresPatch = !!(
                     message.buttonsMessage ||
@@ -62,19 +140,27 @@ class WhatsAppService {
 
         this.sock.ev.on("creds.update", async () => {
             await saveCreds();
-            await this.syncToDB(); // Backup to MongoDB whenever credentials update
         });
 
         this.sock.ev.on("connection.update", async (update) => {
             const { connection, lastDisconnect, qr } = update;
 
             if (qr) {
+                this.status = STATUS.WAITING_QR;
+                this.lastQrTimestamp = Date.now();
                 console.log("[WhatsAppService] 📲 QR Code updated!");
 
-                // 1. Print in terminal (fallback)
+                // Generate base64 for remote API access
+                try {
+                    this.lastQrBase64 = await QRCode.toDataURL(qr);
+                } catch (err) {
+                    console.error("[WhatsAppService] ❌ Failed to generate QR base64:", err);
+                }
+
+                // Print in terminal (fallback for local dev)
                 qrcodeTerminal.generate(qr, { small: true });
 
-                // 2. Save as PNG (Reliable)
+                // Save as PNG file (fallback)
                 try {
                     const qrPath = path.join(process.cwd(), "whatsapp_qr.png");
                     await QRCode.toFile(qrPath, qr);
@@ -86,24 +172,81 @@ class WhatsAppService {
             }
 
             if (connection === "close") {
-                const statusCode = (lastDisconnect.error instanceof Boom)
+                const statusCode = (lastDisconnect?.error instanceof Boom)
                     ? lastDisconnect.error.output.statusCode
                     : 0;
+
+                this.status = STATUS.DISCONNECTED;
+                this.lastQrBase64 = null;
+                this.connectedAt = null;
+                this.lastError = `Connection closed (Status: ${statusCode})`;
 
                 console.log(`[WhatsAppService] 🔌 Connection closed (Status: ${statusCode})`);
 
                 const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
-                if (shouldReconnect) {
-                    console.log("[WhatsAppService] 🔄 Attempting to reconnect in 5 seconds...");
-                    setTimeout(() => this.init(), 5000); // Add a small delay to prevent tight loops
-                } else {
-                    console.log("[WhatsAppService] ❌ Logged out. Clearing session and restarting...");
-                    this.clearSession();
-                    setTimeout(() => this.init(), 5000);
+                if (shouldReconnect && !this.isShuttingDown) {
+                    // Track QR timeouts (408 = Request Timeout i.e. nobody scanned QR)
+                    if (statusCode === 408) {
+                        this.qrTimeoutCount++;
+                        console.log(`[WhatsAppService] ⏱️  QR timeout ${this.qrTimeoutCount}/${RECONNECT.MAX_QR_TIMEOUTS}`);
+
+                        if (this.qrTimeoutCount >= RECONNECT.MAX_QR_TIMEOUTS) {
+                            this.status = STATUS.STOPPED;
+                            this.lastError = `Stopped: QR not scanned after ${RECONNECT.MAX_QR_TIMEOUTS} attempts. Use /api/whatsapp/restart to retry.`;
+                            console.log(`[WhatsAppService] 🛑 Max QR timeouts reached. Bot stopped. Use admin API to restart.`);
+                            return;
+                        }
+                    }
+
+                    // Track 440 errors (Connection Replaced / Conflict)
+                    if (statusCode === 440) {
+                        this.conflict440Count++;
+                        console.log(`[WhatsAppService] ⚠️ 440 Conflict attempt ${this.conflict440Count}/${RECONNECT.MAX_440_RETRIES}`);
+
+                        if (this.conflict440Count >= RECONNECT.MAX_440_RETRIES) {
+                            this.status = STATUS.STOPPED;
+                            this.lastError = `Stopped: Session conflict (440) after ${RECONNECT.MAX_440_RETRIES} retries. Session may be used elsewhere. Clear session and re-scan QR.`;
+                            console.log(`[WhatsAppService] 🛑 Max 440 retries reached. Possible causes:`);
+                            console.log(`    1. WhatsApp Web is open in a browser (close it)`);
+                            console.log(`    2. Another server instance is running with same session`);
+                            console.log(`    3. Session is corrupt — use /api/whatsapp/restart`);
+                            return;
+                        }
+                    } else {
+                        this.reconnectAttempts++;
+                    }
+                    const delay = this.getReconnectDelay();
+                    console.log(`[WhatsAppService] 🔄 Reconnecting in ${delay / 1000}s (attempt ${this.reconnectAttempts})...`);
+                    setTimeout(() => this.init(), delay);
+                } else if (!shouldReconnect) {
+                    console.log("[WhatsAppService] ❌ Logged out. Clearing session...");
+                    await this.clearSession();
+                    this.qrTimeoutCount = 0;
+                    this.reconnectAttempts = 0;
+                    if (!this.isShuttingDown) {
+                        console.log("[WhatsAppService] 🔄 Restarting with fresh session in 5s...");
+                        setTimeout(() => this.init(), 5000);
+                    }
                 }
             } else if (connection === "open") {
+                // SUCCESS: Reset general counters (but NOT conflict440Count immediately)
+                this.status = STATUS.CONNECTED;
+                this.connectedAt = Date.now();
+                this.lastQrBase64 = null;
+                this.qrTimeoutCount = 0;
+                this.reconnectAttempts = 0;
+                this.lastError = null;
                 console.log("[WhatsAppService] ✅ WhatsApp Bot is ONLINE!");
+
+                // Only reset 440 counter after 5 minutes of stable connection
+                if (this.stableResetTimer) clearTimeout(this.stableResetTimer);
+                this.stableResetTimer = setTimeout(() => {
+                    if (this.status === STATUS.CONNECTED) {
+                        this.conflict440Count = 0;
+                        console.log("[WhatsAppService] ✅ Stable for 5 min — 440 counter reset.");
+                    }
+                }, 5 * 60 * 1000);;
             }
         });
 
@@ -118,6 +261,22 @@ class WhatsAppService {
                 }
             }
         });
+    }
+
+    async restart() {
+        console.log("[WhatsAppService] 🔃 Admin-triggered restart...");
+        this.isShuttingDown = false;
+        this.qrTimeoutCount = 0;
+        this.conflict440Count = 0;
+        this.reconnectAttempts = 0;
+        this.lastError = null;
+        this.status = STATUS.DISCONNECTED;
+
+        this.destroySocket();
+
+        // Small delay to let socket fully close
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await this.init();
     }
 
     async handleVerification(jid, code) {
@@ -155,13 +314,9 @@ class WhatsAppService {
                 console.log(`[WhatsAppService] 👤 Code match found for user ${user.name} (${targetPhone})`);
 
                 // --- AUTHORITATIVE IDENTITY RESOLUTION ---
-                // We ask WhatsApp: "Who officially owns targetPhone?"
-
-                // 1. Normalize to strictly DIGITS ONLY for Baileys onWhatsApp (E.164 without domain)
                 const normalizedDigits = this.normalizeToDigits(targetPhone);
                 console.log(`[WhatsAppService] 🔍 Resolving Identity (Digits): ${targetPhone} -> ${normalizedDigits}...`);
 
-                // 2. Resolve via WhatsApp (pass string directly — Baileys uses ...rest params)
                 const resolution = await Promise.race([
                     this.sock.onWhatsApp(normalizedDigits),
                     new Promise((_, reject) => setTimeout(() => reject(new Error("RESOLUTION_TIMEOUT")), 15000))
@@ -188,7 +343,6 @@ class WhatsAppService {
 
                 // --- OWNERSHIP VERIFICATION ---
                 if (isLid) {
-                    // LID senders: Resolve typed number's PN → LID, then compare with sender's LID
                     console.log(`[WhatsAppService] 🔐 LID sender detected. Resolving LID for ${resolvedJid}...`);
                     const typedNumberLid = await this.resolveLidForPN(resolvedJid);
 
@@ -200,8 +354,8 @@ class WhatsAppService {
                         return;
                     }
 
-                    const senderLidRaw = fromRaw; // e.g. "59601579982958"
-                    const typedLidRaw = typedNumberLid.split("@")[0]; // strip @lid domain
+                    const senderLidRaw = fromRaw;
+                    const typedLidRaw = typedNumberLid.split("@")[0];
                     console.log(`[WhatsAppService] 🔍 LID Comparison: Sender=${senderLidRaw}, TypedNumber=${typedLidRaw}`);
 
                     if (senderLidRaw !== typedLidRaw) {
@@ -216,7 +370,6 @@ class WhatsAppService {
 
                     console.log(`[WhatsAppService] ✅ LID ownership confirmed: ${senderLidRaw} === ${typedLidRaw}`);
                 } else {
-                    // PN senders: Direct JID comparison
                     if (jid !== resolvedJid) {
                         console.log(`[WhatsAppService] 🛡️ OWNERSHIP MISMATCH: Sender ${jid} tried to verify ${targetPhone} (Owner: ${resolvedJid})`);
                         user.lastVerificationError = "Ownership mismatch: Use your correct WhatsApp";
@@ -230,8 +383,6 @@ class WhatsAppService {
                 }
 
                 // --- OFFICIAL OWNERSHIP CHECK (Identity Locking) ---
-
-                // 1. LID Identity Lock
                 if (user.whatsappLid && user.whatsappLid !== fromRaw) {
                     user.lastVerificationError = "Account already locked to another WhatsApp";
                     await user.save();
@@ -240,7 +391,6 @@ class WhatsAppService {
                     return;
                 }
 
-                // 2. Cross-User Conflict
                 if (isLid) {
                     const existingLidOwner = await User.findOne({ whatsappLid: fromRaw });
                     if (existingLidOwner && existingLidOwner._id.toString() !== user._id.toString()) {
@@ -297,28 +447,19 @@ class WhatsAppService {
         }
     }
 
-    // Helper to normalize local numbers to International E.164 Digits (no domain)
-    // e.g. 03015072008 -> 923015072008
     normalizeToDigits(phone) {
         let cleaned = phone.replace(/\D/g, "");
-
-        // Pakistani normalization: 03... -> 923...
         if (cleaned.startsWith("03") && cleaned.length === 11) {
             cleaned = "92" + cleaned.slice(1);
         }
-
         return cleaned;
     }
 
-    // Resolves a PN JID (e.g. "923015072008@s.whatsapp.net") to its LID (e.g. "59601579982958@lid")
-    // Uses Baileys' executeUSyncQuery with LID protocol
     async resolveLidForPN(pnJid) {
         try {
             const query = new USyncQuery().withLIDProtocol().withContext('background');
             query.withUser(new USyncUser().withId(pnJid));
 
-            // executeUSyncQuery already parses the result internally (calls parseUSyncQueryResult)
-            // So we get back { list: [...] } directly — NOT a raw binary node
             const results = await Promise.race([
                 this.sock.executeUSyncQuery(query),
                 new Promise((_, reject) => setTimeout(() => reject(new Error("LID_RESOLVE_TIMEOUT")), 10000))
@@ -340,7 +481,6 @@ class WhatsAppService {
         }
     }
 
-    // Updated to search DB instead of memory
     async findPhoneByCode(code) {
         try {
             const { VerificationRequest } = await import("../models/verification-request.model.js");
@@ -351,40 +491,20 @@ class WhatsAppService {
         }
     }
 
-    async syncToDB() {
-        try {
-            const credsRaw = fs.readFileSync(path.join(this.sessionDir, "creds.json"), "utf8");
-            await WhatsAppSession.findOneAndUpdate(
-                { sessionId: "default" },
-                { data: credsRaw },
-                { upsert: true }
-            );
-        } catch (error) {
-            // File might not exist yet
-        }
-    }
-
-    async syncFromDB() {
-        try {
-            const session = await WhatsAppSession.findOne({ sessionId: "default" });
-            if (session && session.data) {
-                fs.writeFileSync(path.join(this.sessionDir, "creds.json"), session.data);
-                console.log("[WhatsAppService] 💾 Restored session from MongoDB.");
-            }
-        } catch (error) {
-            console.log("[WhatsAppService] ℹ️ No session found in MongoDB.");
-        }
-    }
-
     async clearSession() {
         try {
-            await WhatsAppSession.deleteOne({ sessionId: "default" });
-            if (fs.existsSync(this.sessionDir)) {
-                fs.rmSync(this.sessionDir, { recursive: true, force: true });
-            }
+            await WhatsAppAuth.deleteMany({ sessionId: "default" });
         } catch (error) {
             console.error("Error clearing session:", error);
         }
+    }
+
+    async cleanup() {
+        if (this.isShuttingDown) return;
+        this.isShuttingDown = true;
+        this.status = STATUS.STOPPED;
+        console.log("[WhatsAppService] 🛑 Received cleanup signal. Terminating gracefully...");
+        this.destroySocket();
     }
 }
 

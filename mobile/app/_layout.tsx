@@ -8,6 +8,7 @@ import { StripeProvider } from "@stripe/stripe-react-native";
 import { ToastProvider } from "@/context/ToastContext";
 import Toast from "@/components/Toast";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 Sentry.init({
   dsn: "https://fb6731b90610cc08333e6c16ffac5724@o4509813037137920.ingest.de.sentry.io/4510451611205712",
@@ -122,10 +123,12 @@ export default Sentry.wrap(function RootLayout() {
           <ToastProvider>
             <ErrorBoundary>
               <ConfigGuardian>
-                <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-                  <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FFFFFF" } }} />
-                  <ConfigConsumer />
-                </View>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+                    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FFFFFF" } }} />
+                    <ConfigConsumer />
+                  </View>
+                </GestureHandlerRootView>
               </ConfigGuardian>
             </ErrorBoundary>
             <Toast />
