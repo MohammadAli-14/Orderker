@@ -167,7 +167,7 @@ const ProfileScreen = () => {
         <TouchableOpacity
           className="mx-6 mb-4 bg-surface rounded-2xl py-5 flex-row items-center justify-center border border-red-500/30"
           activeOpacity={0.8}
-          onPress={() => signOut()}
+          onPress={() => setShowSignOutConfirm(true)}
         >
           <Ionicons name="log-out-outline" size={22} color="#EF4444" />
           <Text className="text-red-500 font-bold text-base ml-2">Sign Out</Text>
@@ -179,6 +179,19 @@ const ProfileScreen = () => {
           <Text className="text-text-tertiary text-xs mt-1">Made with ❤️ in Karachi</Text>
         </View>
       </ScrollView>
+
+      {/* SIGNOUT CONFIRMATION MODAL */}
+      <ConfirmModal
+        visible={showSignOutConfirm}
+        onClose={() => setShowSignOutConfirm(false)}
+        onConfirm={handleSignOut}
+        title="Sign Out"
+        message="Are you sure you want to sign out of your account?"
+        confirmLabel="Sign Out"
+        cancelLabel="Cancel"
+        isDestructive={true}
+        loading={isSigningOut}
+      />
     </SafeScreen>
   );
 };
