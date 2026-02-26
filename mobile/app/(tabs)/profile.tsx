@@ -7,6 +7,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useProfile } from "@/hooks/useProfile";
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { useState } from "react";
 
 const MENU_ITEMS = [
   { id: 1, icon: "bag-outline", title: "Orders", color: "#10B981", action: "/orders" },
@@ -18,6 +20,21 @@ const ProfileScreen = () => {
   const { signOut } = useAuth();
   const { user } = useUser();
   const { profile } = useProfile();
+
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await signOut();
+    } catch (e) {
+      console.error("Sign out error:", e);
+    } finally {
+      setIsSigningOut(false);
+      setShowSignOutConfirm(false);
+    }
+  };
 
   const handleMenuPress = (action: (typeof MENU_ITEMS)[number]["action"]) => {
     router.push(action);
