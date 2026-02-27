@@ -128,7 +128,7 @@ const PhoneVerificationModal: React.FC<Props> = ({
     const handleMagicVerify = async () => {
         const cleaned = phone.replace(/\D/g, '');
         if (!cleaned || cleaned.length < 10) {
-            showToast({ type: 'error', title: 'Invalid Number', message: 'Please enter a valid phone number (min 10 digits).' });
+            setError('Please enter a valid phone number (min 10 digits).');
             return;
         }
 
@@ -164,7 +164,7 @@ const PhoneVerificationModal: React.FC<Props> = ({
             }
         } catch (err: any) {
             const errMsg = err?.response?.data?.error || 'Could not initiate WhatsApp verification. Please check your connection.';
-            showToast({ type: 'error', title: 'Failed', message: errMsg });
+            setError(errMsg);
         } finally {
             setLoading(false);
         }
@@ -214,7 +214,7 @@ const PhoneVerificationModal: React.FC<Props> = ({
             onRequestClose={onDismiss}
         >
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={styles.overlay}
             >
                 <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
@@ -259,15 +259,28 @@ const PhoneVerificationModal: React.FC<Props> = ({
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}>Phone Number</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, error ? { borderColor: '#EF4444' } : null]}
                                     value={phone}
-                                    onChangeText={setPhone}
+                                    onChangeText={(text) => {
+                                        setPhone(text);
+                                        if (error) setError("");
+                                    }}
                                     placeholder="+92 300 1234567"
                                     placeholderTextColor="#9CA3AF"
                                     keyboardType="phone-pad"
                                     maxLength={13}
                                     autoFocus
                                 />
+                                {error ? (
+                                    <View style={[styles.errorBox, { marginTop: 12, marginBottom: 0 }]}>
+                                        <Ionicons name="alert-circle" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+                                        <Text style={styles.errorText}>
+                                            {error === "Number mismatch detected"
+                                                ? "Sender mismatch! Your WhatsApp account doesn't match this number."
+                                                : error}
+                                        </Text>
+                                    </View>
+                                ) : null}
                             </View>
                         ) : (
                             <View style={styles.inputGroup}>

@@ -16,6 +16,7 @@ import { PrimaryButton } from "@/components/PrimaryButton"; // Updated import
 import { CartItemSkeleton } from "@/components/Skeleton";
 import { ConfirmModal } from "@/components/ConfirmModal";
 
+import { useProfile } from "@/hooks/useProfile";
 import * as Sentry from "@sentry/react-native";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
@@ -28,6 +29,8 @@ type PaymentMethod = "Stripe" | "COD" | "Easypaisa" | "JazzCash";
 const CartScreen = () => {
   const api = useApi();
   const { user } = useUser();
+  const { profile, isLoading: isProfileLoading } = useProfile();
+
   const {
     cart,
     cartItemCount,
@@ -82,22 +85,8 @@ const CartScreen = () => {
   const handleCheckout = () => {
     if (cartItems.length === 0) return;
 
-    // Use simulated verification check for now since we don't have isPhoneVerified in Clerk metadata yet
-    // In a real scenario, we would check user.publicMetadata.isPhoneVerified
-    // For this implementation, we will check if we have a phone number in the Address or User profile
-    // If not, trigger verification.
-
-    // Simple check: If verifying, we show the modal.
-    // We can use a local storage flag or context if needed, but here we'll trigger it 
-    // if the user hasn't explicitly verified in this session or if we force it.
-    // For the requested flow: "Enforce phone number verification"
-
-    // Check if user has a verified phone in our backend (simulated by publicMetadata or local check)
-    // Since we don't have the backend user object synced here easily without a call:
-    // We'll trust the Clerk user.phoneNumbers if available, OR trigger our custom flow.
-
-    const isVerified = user?.publicMetadata?.isPhoneVerified === true;
-    const hasPhone = !!user?.primaryPhoneNumber;
+    // Use backend profile truth, completely ignoring empty Clerk publicMetadata
+    const isVerified = profile?.isPhoneVerified === true;
 
     if (!isVerified) {
       setVerificationModalVisible(true);
