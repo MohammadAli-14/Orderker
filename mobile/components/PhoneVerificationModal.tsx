@@ -144,8 +144,10 @@ const PhoneVerificationModal: React.FC<Props> = ({
             const message = `VERIFY:${code}`;
             const whatsappUrl = `whatsapp://send?phone=${botNumber}&text=${encodeURIComponent(message)}`;
 
-            const supported = await Linking.canOpenURL(whatsappUrl);
-            if (supported) {
+            // Fix for Android 11+ Intent Queries: 
+            // Instead of canOpenURL (which gets blocked by package visibility restrictions),
+            // we fire openURL directly and catch the rejection if the app isn't installed.
+            try {
                 await Linking.openURL(whatsappUrl);
                 showToast({
                     type: 'success',
@@ -153,8 +155,12 @@ const PhoneVerificationModal: React.FC<Props> = ({
                     message: 'Please send the pre-filled message to verify.'
                 });
                 setStep('otp');
-            } else {
-                showToast({ type: 'error', title: 'WhatsApp Not Found', message: 'Please install WhatsApp to use this feature.' });
+            } catch (linkingErr) {
+                showToast({
+                    type: 'error',
+                    title: 'WhatsApp Not Found',
+                    message: 'Please install WhatsApp to use this feature.'
+                });
             }
         } catch (err: any) {
             const errMsg = err?.response?.data?.error || 'Could not initiate WhatsApp verification. Please check your connection.';
