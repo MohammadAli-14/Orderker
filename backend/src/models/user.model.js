@@ -78,7 +78,6 @@ const userSchema = new mongoose.Schema(
     },
     whatsappLid: {
       type: String,
-      default: "",
       unique: true,
       sparse: true,
     },
