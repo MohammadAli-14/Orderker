@@ -216,6 +216,7 @@ const PhoneVerificationModal: React.FC<Props> = ({
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={styles.overlay}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             >
                 <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
                     <View style={styles.sheet}>
@@ -370,7 +371,6 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     scrollContainer: {
-        justifyContent: 'flex-end',
         flexGrow: 1,
     },
     sheet: {

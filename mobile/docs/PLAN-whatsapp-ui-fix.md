@@ -1,40 +1,21 @@
-# Project Plan: Polish WhatsApp Verification Modal UI
+# Implementation Plan: WhatsApp UI Fix - Input Visibility
 
-## Context & Objectives
-The `PhoneVerificationModal` has visual glitches on Android: the modal shifts all the way to the top of the screen when the keyboard is summoned, and error messages (Toasts) are hidden behind the native modal layer layer. We're going to fix the layout engine and transition to inline contextual errors to solve these.
+The phone number input field in the WhatsApp verification modal is currently being obscured by the keyboard on Android devices. This plan addresses the layout issues to ensure the input field remains visible and focused when the keyboard is active.
 
-## Goal
-Fix `KeyboardAvoidingView` behavior for Android and refactor `showToast` validation errors to inline UI errors.
+## Proposed Changes
 
-## Implementation Steps
+### [Component] PhoneVerificationModal
 
-### 1. Fix Keyboard Positioning
-- Open `PhoneVerificationModal.tsx`.
-- Locate the `KeyboardAvoidingView`.
-- Change `behavior={Platform.OS === 'ios' ? 'padding' : 'height'}` to `behavior={Platform.OS === 'ios' ? 'padding' : undefined}`. 
-- *Fallback safety*: Android's `adjustResize` will handle the keyboard without the `height` conflict.
+#### [MODIFY] [PhoneVerificationModal.tsx](file:///e:/OrderKerEcommerceProject7Feb - Copy/expo-ecommerce/mobile/components/PhoneVerificationModal.tsx)
+- **Change Keyboard Avoiding Behavior**: Update `KeyboardAvoidingView` to use `behavior="height"` on Android (or `padding` depending on further tests, but `height` is often better for bottom sheets in Modals).
+- **Update Scroll Container Style**: Remove `justifyContent: 'flex-end'` from `scrollContainer`. This property forces content to the bottom of the available space, which can be submerged behind the keyboard if the view doesn't resize perfectly. Rely on the `overlay`'s `justifyContent: 'flex-end'` to maintain the bottom sheet look.
+- **Add Keyboard Vertical Offset**: Add a small `keyboardVerticalOffset` to ensure there's balanced spacing between the keyboard and the input field.
 
-### 2. Implement Inline Errors for the Phone Step
-- Find the `step === 'phone'` render block.
-- Refactor the UI to display the `error` state variable inside the `inputGroup`.
-- Example UI addition:
-```tsx
-{error ? (
-    <View style={[styles.errorBox, { marginTop: 8, marginBottom: 0 }]}>
-        <Ionicons name="alert-circle" size={18} color="#EF4444" style={{ marginRight: 6 }} />
-        <Text style={styles.errorTextInline}>{error}</Text>
-    </View>
-) : null}
-```
+## Verification Plan
 
-### 3. Replace internal `showToast` calls with `setError`
-- In `handleMagicVerify`:
-  - Change `showToast({ type: 'error', title: 'Invalid Number', ... })` to `setError('Please enter a valid phone number (min 10 digits).')`.
-- In `handleSendOTP` (if used in future, good to cover):
-  - Change similar `showToast` error calls to `setError`.
-- Add an `onChangeText` hook behavior: clear the `error` state whenever the user starts typing a new number (`setError("")`).
-
-### 4. Verification Checklist
-- [ ] Tapping the input on Android smoothly pushes the modal up to rest exactly atop the keyboard without covering the whole screen.
-- [ ] Submitting an invalid number (like "123") shows a crisp red inline error inside the modal box.
-- [ ] No toasts appear *behind* the modal dialog while it is open.
+### Manual Verification
+- Open the shopping cart and trigger the phone verification modal.
+- Verify that the modal appears as a bottom sheet.
+- Tap the phone number input field.
+- **Success Criteria**: The modal should shift upwards, keeping the "Verify Your Phone" title AND the "Phone Number" input box clearly visible above the keyboard.
+- Verify that the "Magic Verify" button is also accessible or reachable by scrolling.

@@ -1,35 +1,55 @@
-## 🧠 Brainstorm: WhatsApp Verification Modal UI Issues
+## 🧠 Brainstorm: WhatsApp UI Fix - Input Visibility
 
 ### Context
-The user reported two major UX issues with the `PhoneVerificationModal` on Android:
-1. **Keyboard Glitch**: When typing a phone number, the modal flies to the absolute top of the screen (full screen) instead of gently rising above the keyboard.
-2. **Hidden Toasts**: When typing an invalid number, the error popup (Toast) appears *behind* the modal, making it invisible to the user.
+When the `PhoneVerificationModal` is opened and the keyboard pops up (due to `autoFocus`), the phone number input field is hidden under the keyboard on Android. The user only sees the title and subtitle, and the keyboard, but not the input they are typing into.
 
 ---
 
-### Analysis: Keyboard Glitch
+### Option A: Change KeyboardAvoidingView Behavior
+Currently, Android uses `behavior={undefined}`. On many Android devices, especially with `edgeToEdgeEnabled: true`, explicitly setting `behavior="height"` or `behavior="padding"` can force the modal content to stay above the keyboard.
 
-**Why it happens:**
-In React Native, `<Modal>` creates a new native window. Inside that window, we used `<KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>`. On Android, `behavior="height"` aggressively shrinks the flex container. When combined with a `ScrollView` and `justifyContent: 'flex-end'`, it often forces the content all the way to the top margin under the status bar.
+✅ **Pros:**
+- Standard React Native solution.
+- Easy to implement.
 
-**Options:**
-1. **Option 1**: Change behavior to `undefined` for Android. Expo apps built for Android default to `windowSoftInputMode="adjustResize"`, meaning Android automatically shrinks the modal bounds when the keyboard opens. Using `KeyboardAvoidingView` on top of that causes conflict.
-2. **Option 2**: Leave `padding` for iOS but use an empty string or null for Android.
+❌ **Cons:**
+- Can be inconsistent across different Android versions/manufacturers.
 
-### Analysis: Hidden Toasts
-
-**Why it happens:**
-The custom `useToast` provider lives at the root React level. Native `<Modal>` components render entirely on top of the root view node, effectively giving them a massive native z-index. The Toast triggers successfully, but renders *underneath* the modal's semi-transparent grey backdrop.
-
-**Options:**
-1. **Option 1**: Convert the Native `<Modal>` into an absolutely positioned view that shares the same React tree as the Toast Provider. 
-   - *Cons*: Total rewrite of the modal animation logic.
-2. **Option 2**: Use **Inline Errors** instead of Toasts. The component already has an `errorBox` UI for the OTP polling step. We can reuse this inline error state directly on the Phone Number input step.
-   - *Pros*: Follows UI/UX best practices (errors should be contextual to the input). Easy to implement.
+📊 **Effort:** Low
 
 ---
 
-## 💡 Recommendations
+### Option B: Adjust ScrollView Styling
+The `scrollContainer` currently has `justifyContent: 'flex-end'`. When the keyboard opens and the available height shrinks, this might be forcing the content to stay at the bottom, which is now *under* the keyboard. Changing this to `justifyContent: 'center'` (when keyboard is up) or simply relying on normal scroll flow might help.
 
-1. **For the Keyboard**: Modify `KeyboardAvoidingView` to use `behavior={Platform.OS === 'ios' ? 'padding' : undefined}`. The padding is critical for iOS iPhones, but Android will handle resizing natively.
-2. **For the Errors**: We will stop using `showToast` for validation errors inside the modal. Instead, we will add an inline `{error ? <Text style={styles.errorTextInline}>{error}</Text> : null}` below the phone input, and use `setError(errorMessage)` in our submit functions.
+✅ **Pros:**
+- Prevents content from being "pinned" to the submerged bottom.
+- Better for accessibility and different screen sizes.
+
+❌ **Cons:**
+- Might change the intended "bottom sheet" look when the keyboard is closed.
+
+📊 **Effort:** Low
+
+---
+
+### Option C: Use a Different Keyboard Management Strategy
+Instead of `KeyboardAvoidingView` inside the Modal, we can use `avoidKeyboard` prop (if using certain libraries, but we are using standard Expo/RN) or adjust the `softwareKeyboardLayoutMode` in `app.json`. Alternatively, we can manually adjust padding/margin based on keyboard listeners.
+
+✅ **Pros:**
+- Most control over the layout.
+
+❌ **Cons:**
+- More complex code.
+- Might require a native build (changing app.json).
+
+📊 **Effort:** Medium
+
+---
+
+## 💡 Recommendation
+
+**Option A + Option B**
+I recommend setting `behavior="padding"` for Android in the `KeyboardAvoidingView` and removing `justifyContent: 'flex-end'` from the `scrollContainer` in favor of a simpler layout that lets the list flow naturally. We should also ensure the `Modal` is properly handling the keyboard height.
+
+What direction would you like to explore?
