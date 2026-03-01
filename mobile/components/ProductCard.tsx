@@ -83,9 +83,10 @@ export const ProductCard = React.memo(({
                 <Image
                     source={{ uri: image }}
                     contentFit="cover"
-                    transition={300}
+                    transition={200}
                     style={{ width: '100%', height: '100%' }}
                     placeholder="https://via.placeholder.com/150"
+                    cachePolicy="memory-disk"
                 />
             </View>
 

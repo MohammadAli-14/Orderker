@@ -55,4 +55,9 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Improve query performance for mobile pre-fetching and filtering
+productSchema.index({ category: 1 });
+productSchema.index({ isFlashSale: 1 });
+productSchema.index({ price: 1 });
+
 export const Product = mongoose.model("Product", productSchema);

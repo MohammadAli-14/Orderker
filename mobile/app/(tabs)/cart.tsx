@@ -21,7 +21,6 @@ import * as Sentry from "@sentry/react-native";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import { router } from "expo-router";
-import PhoneVerificationModal from "@/components/PhoneVerificationModal";
 import { useUser } from "@clerk/clerk-expo";
 
 type PaymentMethod = "Stripe" | "COD" | "Easypaisa" | "JazzCash";
@@ -52,7 +51,6 @@ const CartScreen = () => {
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [removeModalVisible, setRemoveModalVisible] = useState(false);
   const [clearCartVisible, setClearCartVisible] = useState(false);
-  const [verificationModalVisible, setVerificationModalVisible] = useState(false);
   const [itemToRemove, setItemToRemove] = useState<{ id: string; name: string } | null>(null);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
@@ -89,7 +87,10 @@ const CartScreen = () => {
     const isVerified = profile?.isPhoneVerified === true;
 
     if (!isVerified) {
-      setVerificationModalVisible(true);
+      router.push({
+        pathname: "/verify-phone" as any,
+        params: { returnTo: "/(tabs)/cart" }
+      });
       return;
     }
 
@@ -455,14 +456,7 @@ const CartScreen = () => {
         isDestructive={true}
         loading={isClearing}
       />
-      <PhoneVerificationModal
-        visible={verificationModalVisible}
-        onVerified={() => {
-          setVerificationModalVisible(false);
-          setAddressModalVisible(true);
-        }}
-        onDismiss={() => setVerificationModalVisible(false)}
-      />
+
     </SafeScreen>
   );
 };

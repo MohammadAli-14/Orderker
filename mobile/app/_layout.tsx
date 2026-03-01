@@ -6,6 +6,7 @@ import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import * as Sentry from "@sentry/react-native";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { ToastProvider } from "@/context/ToastContext";
+import { useApi } from "@/lib/api";
 import Toast from "@/components/Toast";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -85,6 +86,7 @@ if (!clerkPublishableKey) {
 
 import ConfigGuardian from "@/components/ConfigGuardian";
 import { useConfig } from "@/hooks/useConfig";
+import useProducts from "@/hooks/useProducts";
 import FlashSaleBanner from "@/components/FlashSaleBanner";
 
 const ConfigConsumer = () => {
@@ -93,9 +95,62 @@ const ConfigConsumer = () => {
 
   if (!flashSale || (!flashSale.active && flashSale.status !== "SCHEDULED")) return null;
 
-  // Sticky banner removed as per UI revamp request
   return null;
 };
+
+// --- STARTUP LOGIC COMPONENT ---
+// This component handles resource loading, config fetching, and splash screen timing.
+function StartupLogic({ children, fontsLoaded, fontsError }: { children: React.ReactNode, fontsLoaded: boolean, fontsError: any }) {
+  const { isSuccess: configSuccess, isError: configError, isLoading: configLoading } = useConfig();
+  const api = useApi();
+
+  // Pre-fetch products to warm the cache while the splash screen is still visible
+  useProducts();
+
+  useEffect(() => {
+    // Backend Warm-up: Fire and forget a ping to the health endpoint
+    // This wakes up the Render server if it's sleeping.
+    const wakeUpBackend = async () => {
+      try {
+        await api.get("/health", { timeout: 10000 });
+        console.log("[Performance] 📡 Backend wake-up ping sent.");
+      } catch (e) {
+        // Ignore errors, it's just a warm-up
+      }
+    };
+    wakeUpBackend();
+  }, []);
+
+  useEffect(() => {
+    // Hide splash screen ONLY when:
+    // 1. Fonts are loaded (or failed)
+    // AND
+    // 2. Config is fetched (or failed/timed out)
+    const isReady = (fontsLoaded || fontsError) && (!configLoading || configError || configSuccess);
+
+    if (isReady) {
+      // Small delay for smooth transition (increased for Android stability)
+      // This ensures the first frame of the app is fully committed to the GPU
+      const timer = setTimeout(() => {
+        SplashScreen.hideAsync().catch(() => {
+          /* ignore hide errors */
+        });
+      }, 250); // Increased to 250ms for even better stability on MIUI
+      return () => clearTimeout(timer);
+    }
+  }, [fontsLoaded, fontsError, configLoading, configError, configSuccess]);
+
+  // While we wait, we keep a stable white background to ensure hardware acceleration stays active
+  if (!fontsLoaded && !fontsError) {
+    return <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />;
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} renderToHardwareTextureAndroid={true}>
+      {children}
+    </View>
+  );
+}
 
 export default Sentry.wrap(function RootLayout() {
   const [loaded, error] = useFonts({
@@ -106,30 +161,22 @@ export default Sentry.wrap(function RootLayout() {
     PlusJakartaSans_800ExtraBold,
   });
 
-  useEffect(() => {
-    if (loaded || error) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded, error]);
-
-  if (!loaded && !error) {
-    return null;
-  }
-
   return (
     <ClerkProvider publishableKey={clerkPublishableKey} tokenCache={tokenCache}>
       <QueryClientProvider client={queryClient}>
         <StripeProvider publishableKey={stripePublishableKey}>
           <ToastProvider>
             <ErrorBoundary>
-              <ConfigGuardian>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                  <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-                    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FFFFFF" } }} />
-                    <ConfigConsumer />
-                  </View>
-                </GestureHandlerRootView>
-              </ConfigGuardian>
+              <StartupLogic fontsLoaded={loaded} fontsError={error}>
+                <ConfigGuardian>
+                  <GestureHandlerRootView style={{ flex: 1 }}>
+                    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+                      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FFFFFF" } }} />
+                      <ConfigConsumer />
+                    </View>
+                  </GestureHandlerRootView>
+                </ConfigGuardian>
+              </StartupLogic>
             </ErrorBoundary>
             <Toast />
           </ToastProvider>

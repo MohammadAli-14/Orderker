@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, FlatList, ActivityIndicator, Alert, Animated } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, FlatList, ActivityIndicator, Alert, Animated, Platform } from "react-native";
 import SafeScreen from "@/components/SafeScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { SearchInput } from "../../components/SearchInput";
@@ -411,7 +411,11 @@ export default function HomeScreen() {
                     className="absolute top-0 left-0 right-0 z-50 px-4 pb-1"
                 >
                     <Animated.View pointerEvents="none" style={{ opacity: headerOpacity, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-                        <BlurView intensity={100} tint="light" style={{ flex: 1 }} />
+                        {Platform.OS === 'ios' ? (
+                            <BlurView intensity={100} tint="light" style={{ flex: 1 }} />
+                        ) : (
+                            <View style={{ flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.95)' }} />
+                        )}
                     </Animated.View>
 
                     <LinearGradient
@@ -443,17 +447,31 @@ export default function HomeScreen() {
                         </TouchableOpacity>
 
                         {/* Search Bar (Stretched - Logo removed as per client request) */}
-                        <BlurView intensity={90} tint="light" className="flex-1 rounded-full overflow-hidden flex-row items-center px-4 h-10 border border-white/40 shadow-sm">
-                            <Ionicons name="search" size={15} color="#4B5563" />
-                            <SearchInput
-                                value={searchText}
-                                onChangeText={setSearchText}
-                                placeholder="Search products..."
-                                containerStyle={{ flex: 1, height: '100%', marginBottom: 0 }}
-                                inputStyle={{ fontSize: 13, height: '100%', color: '#1F2937' }}
-                                hideFilter
-                            />
-                        </BlurView>
+                        {Platform.OS === 'ios' ? (
+                            <BlurView intensity={90} tint="light" className="flex-1 rounded-full overflow-hidden flex-row items-center px-4 h-10 border border-white/40 shadow-sm">
+                                <Ionicons name="search" size={15} color="#4B5563" />
+                                <SearchInput
+                                    value={searchText}
+                                    onChangeText={setSearchText}
+                                    placeholder="Search products..."
+                                    containerStyle={{ flex: 1, height: '100%', marginBottom: 0 }}
+                                    inputStyle={{ fontSize: 13, height: '100%', color: '#1F2937' }}
+                                    hideFilter
+                                />
+                            </BlurView>
+                        ) : (
+                            <View className="flex-1 rounded-full bg-white/95 overflow-hidden flex-row items-center px-4 h-10 border border-gray-100 shadow-sm">
+                                <Ionicons name="search" size={15} color="#4B5563" />
+                                <SearchInput
+                                    value={searchText}
+                                    onChangeText={setSearchText}
+                                    placeholder="Search products..."
+                                    containerStyle={{ flex: 1, height: '100%', marginBottom: 0 }}
+                                    inputStyle={{ fontSize: 13, height: '100%', color: '#1F2937' }}
+                                    hideFilter
+                                />
+                            </View>
+                        )}
                     </View>
                 </Animated.View>
 

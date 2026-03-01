@@ -11,7 +11,6 @@ import AddressSelectionModal from "@/components/AddressSelectionModal";
 import { useToast } from "@/context/ToastContext";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
-import PhoneVerificationModal from "@/components/PhoneVerificationModal";
 
 const AccountInfoScreen = () => {
     const { user: clerkUser } = useUser();
@@ -24,7 +23,6 @@ const AccountInfoScreen = () => {
     // Phone state
     const [phoneNumber, setPhoneNumber] = useState(profile?.phoneNumber || "");
     const [isEditingPhone, setIsEditingPhone] = useState(false);
-    const [verificationModalVisible, setVerificationModalVisible] = useState(false);
 
     // Name state
     const [name, setName] = useState(clerkUser?.fullName || "");
@@ -276,7 +274,10 @@ const AccountInfoScreen = () => {
                         {!profile?.isPhoneVerified && profile?.phoneNumber && (
                             <TouchableOpacity
                                 style={styles.whatsappVerifyBox}
-                                onPress={() => setVerificationModalVisible(true)}
+                                onPress={() => router.push({
+                                    pathname: "/verify-phone",
+                                    params: { returnTo: "/(profile)/account-info" }
+                                })}
                             >
                                 <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
                                 <Text style={styles.whatsappVerifyText}>Magic Verify via WhatsApp</Text>
@@ -358,14 +359,7 @@ const AccountInfoScreen = () => {
                 isProcessing={false}
             />
 
-            <PhoneVerificationModal
-                visible={verificationModalVisible}
-                existingPhone={phoneNumber}
-                onVerified={() => {
-                    setVerificationModalVisible(false);
-                }}
-                onDismiss={() => setVerificationModalVisible(false)}
-            />
+
         </SafeScreen>
     );
 };

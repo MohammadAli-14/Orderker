@@ -11,16 +11,8 @@ interface ConfigGuardianProps {
 const ConfigGuardian: React.FC<ConfigGuardianProps> = ({ children }) => {
     const { data: config, isLoading, isError } = useConfig();
 
-    if (isLoading) {
-        return (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
-                <ActivityIndicator size="large" color="#5E2D87" />
-            </View>
-        );
-    }
-
-    if (isError || !config) {
-        return children; // Graceful degradation - show the app if config fails
+    if (isError || !config || isLoading) {
+        return children; // Graceful degradation or waiting for StartupLogic
     }
 
     // 1. Maintenance Check
