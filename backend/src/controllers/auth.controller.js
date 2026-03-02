@@ -1,5 +1,46 @@
 import { notificationService } from "../services/notification.service.js";
 import { User } from "../models/user.model.js";
+import { whatsappService } from "../services/whatsapp.service.js";
+
+const OTP_WINDOW_MS = 15 * 60 * 1000;
+const OTP_MAX_REQUESTS = 5;
+const OTP_MIN_INTERVAL_MS = 45 * 1000;
+const whatsappCodeRequestTracker = new Map();
+
+function trackAndValidateWhatsAppCodeRequest(userId) {
+    const now = Date.now();
+    const tracker = whatsappCodeRequestTracker.get(userId) || {
+        requests: [],
+        lastRequestAt: 0,
+    };
+
+    const requestsInWindow = tracker.requests.filter((timestamp) => now - timestamp < OTP_WINDOW_MS);
+
+    if (tracker.lastRequestAt && now - tracker.lastRequestAt < OTP_MIN_INTERVAL_MS) {
+        return {
+            allowed: false,
+            error: "Please wait before requesting another verification code.",
+            retryAfterSeconds: Math.ceil((OTP_MIN_INTERVAL_MS - (now - tracker.lastRequestAt)) / 1000),
+        };
+    }
+
+    if (requestsInWindow.length >= OTP_MAX_REQUESTS) {
+        const oldestInWindow = requestsInWindow[0];
+        return {
+            allowed: false,
+            error: "Too many verification attempts. Please try again later.",
+            retryAfterSeconds: Math.ceil((OTP_WINDOW_MS - (now - oldestInWindow)) / 1000),
+        };
+    }
+
+    requestsInWindow.push(now);
+    whatsappCodeRequestTracker.set(userId, {
+        requests: requestsInWindow,
+        lastRequestAt: now,
+    });
+
+    return { allowed: true };
+}
 
 export async function sendVerificationCode(req, res) {
     try {
@@ -70,11 +111,26 @@ export async function requestWhatsAppCode(req, res) {
             });
         }
 
+        const rateLimitResult = trackAndValidateWhatsAppCodeRequest(user._id.toString());
+        if (!rateLimitResult.allowed) {
+            return res.status(429).json({
+                error: rateLimitResult.error,
+                retryAfterSeconds: rateLimitResult.retryAfterSeconds,
+            });
+        }
+
+        const botStatus = whatsappService.getStatus().status;
+        if (botStatus !== "connected") {
+            return res.status(503).json({
+                error: "WhatsApp verification service is temporarily unavailable. Please try again shortly."
+            });
+        }
+
         // Clear previous errors, but do NOT update phone number until verified!
         user.lastVerificationError = "";
         await user.save();
 
-        const result = await notificationService.getWhatsAppCode(phoneNumber, user._id);
+        const result = await notificationService.getWhatsAppCode(cleanPhone, user._id);
         res.status(200).json(result);
 
     } catch (error) {

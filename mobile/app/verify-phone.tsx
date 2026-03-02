@@ -20,6 +20,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import SafeScreen from '@/components/SafeScreen';
 
 const PURPLE = '#5E2D87';
+const OTP_WAIT_TIMEOUT_MS = 5 * 60 * 1000;
 
 type Step = 'phone' | 'otp' | 'success';
 
@@ -35,22 +36,34 @@ const VerifyPhoneScreen = () => {
     const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [otpRequestedAt, setOtpRequestedAt] = useState<number | null>(null);
 
     // Polling interval reference
     useEffect(() => {
         let interval: any;
 
         if (step === 'otp' && !loading) {
-            // Start polling every 3 seconds
             interval = setInterval(() => {
-                checkStatus(true); // silent check
+                if (otpRequestedAt && Date.now() - otpRequestedAt >= OTP_WAIT_TIMEOUT_MS) {
+                    setError('Verification timed out. Please request a new code and try again.');
+                    setOtpRequestedAt(null);
+                    setStep('phone');
+                    showToast({
+                        type: 'error',
+                        title: 'Verification Timed Out',
+                        message: 'Please request a new verification code.'
+                    });
+                    return;
+                }
+
+                checkStatus(true);
             }, 3000);
         }
 
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [step, loading]);
+    }, [step, loading, otpRequestedAt, showToast]);
 
     // Initial check for verified status
     useEffect(() => {
@@ -85,6 +98,7 @@ const VerifyPhoneScreen = () => {
                     title: 'WhatsApp Opened',
                     message: 'Please send the pre-filled message to verify.'
                 });
+                setOtpRequestedAt(Date.now());
                 setStep('otp');
             } catch (linkingErr) {
                 showToast({
@@ -102,6 +116,21 @@ const VerifyPhoneScreen = () => {
     };
 
     const checkStatus = async (silent = false) => {
+        if (step === 'otp' && otpRequestedAt && Date.now() - otpRequestedAt >= OTP_WAIT_TIMEOUT_MS) {
+            setError('Verification timed out. Please request a new code and try again.');
+            setOtpRequestedAt(null);
+            setStep('phone');
+
+            if (!silent) {
+                showToast({
+                    type: 'error',
+                    title: 'Verification Timed Out',
+                    message: 'Please request a new verification code.'
+                });
+            }
+            return;
+        }
+
         if (!silent) setLoading(true);
         try {
             // Fetch profile directly for reliability
@@ -111,6 +140,7 @@ const VerifyPhoneScreen = () => {
             if (userData.isPhoneVerified) {
                 if (!silent) showToast({ type: 'success', title: 'Success!', message: 'Your account is now verified.' });
                 setError("");
+                setOtpRequestedAt(null);
 
                 // Refresh everything
                 await user?.reload();
@@ -121,6 +151,7 @@ const VerifyPhoneScreen = () => {
             } else if (userData.lastVerificationError) {
                 const errMsg = userData.lastVerificationError;
                 setError(errMsg);
+                setOtpRequestedAt(null);
 
                 // CRITICAL FIX: If we have a definitive error, switch back to 'phone' step
                 // so the user can actually SEE the error and change the number.
@@ -263,12 +294,15 @@ const VerifyPhoneScreen = () => {
                                     <ActivityIndicator size="large" color={PURPLE} style={{ marginBottom: 16 }} />
                                     <Text style={styles.waitingTitle}>Waiting for Message...</Text>
                                     <Text style={styles.waitingSubtitle}>
-                                        Please don't close this screen while we verify your number.
+                                        Please don&apos;t close this screen while we verify your number.
                                     </Text>
                                 </View>
 
                                 <TouchableOpacity
-                                    onPress={() => setStep('phone')}
+                                    onPress={() => {
+                                        setOtpRequestedAt(null);
+                                        setStep('phone');
+                                    }}
                                     style={styles.retryButton}
                                 >
                                     <Ionicons name="refresh" size={18} color={PURPLE} style={{ marginRight: 8 }} />

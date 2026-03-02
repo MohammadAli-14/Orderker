@@ -90,7 +90,7 @@ export default function LocationScreen() {
                     <View style={styles.headingContainer}>
                         <Text style={styles.title}>Select Your Location</Text>
                         <Text style={styles.subtitle}>
-                            Switch on your location to stay in tune with what's happening in your area
+                            Switch on your location to stay in tune with what&apos;s happening in your area
                         </Text>
                     </View>
 
@@ -130,7 +130,7 @@ export default function LocationScreen() {
                             onPress={handleContinue}
                         />
                         <Text style={styles.termsText}>
-                            By clicking on "Continue" you are agreeing to our{" "}
+                            By clicking on &quot;Continue&quot; you are agreeing to our{" "}
                             <Text style={styles.termsLink}>terms of use</Text>
                         </Text>
                     </View>

@@ -59,16 +59,6 @@ export default function WishlistScreen() {
         setRemoveModalVisible(true);
     }, []);
 
-    if (isLoading) {
-        return (
-            <SafeScreen>
-                <View className="flex-1 items-center justify-center bg-white">
-                    <ActivityIndicator size="large" color="#5E2D87" />
-                </View>
-            </SafeScreen>
-        );
-    }
-
     const renderItem = useCallback(({ item }: { item: any }) => (
         <View className="bg-white rounded-2xl p-4 shadow-sm mb-4 border border-gray-100">
             <View className="flex-row mb-4">
@@ -183,6 +173,16 @@ export default function WishlistScreen() {
             </TouchableOpacity>
         </View>
     ), [isRedirecting, handleBrowseProducts]);
+
+    if (isLoading) {
+        return (
+            <SafeScreen>
+                <View className="flex-1 items-center justify-center bg-white">
+                    <ActivityIndicator size="large" color="#5E2D87" />
+                </View>
+            </SafeScreen>
+        );
+    }
 
     return (
         <SafeScreen>

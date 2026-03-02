@@ -146,3 +146,5 @@ export const ProductCard = React.memo(({
         </TouchableOpacity>
     );
 });
+
+ProductCard.displayName = "ProductCard";

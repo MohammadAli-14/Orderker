@@ -519,7 +519,7 @@ function EmptyUI() {
         </View>
         <Text className="text-3xl font-bold text-text-primary mb-3 text-center">Your Cart is Empty</Text>
         <Text className="text-text-secondary text-center px-8 leading-6 text-base mb-10">
-          Looks like you haven't added anything to your cart yet. Go ahead and explore our top categories.
+          Looks like you haven&apos;t added anything to your cart yet. Go ahead and explore our top categories.
         </Text>
 
         <TouchableOpacity

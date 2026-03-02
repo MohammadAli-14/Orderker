@@ -7,6 +7,10 @@ export async function createOrder(req, res) {
     const user = req.user;
     const { orderItems, shippingAddress, paymentResult, totalPrice, paymentMethod, paymentProof } = req.body;
 
+    if (!user.isPhoneVerified) {
+      return res.status(403).json({ error: "Phone verification required before placing an order" });
+    }
+
     if (paymentProof) {
       console.log(`Payment Proof received: TxnID: ${paymentProof.transactionId}, URL: ${paymentProof.receiptUrl}`);
     }

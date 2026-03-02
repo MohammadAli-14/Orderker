@@ -66,6 +66,23 @@ jest.mock('@/hooks/useAddressess', () => ({
     }),
 }));
 
+jest.mock('@/hooks/useProfile', () => ({
+    useProfile: () => ({
+        profile: {
+            isPhoneVerified: true,
+        },
+        isLoading: false,
+    }),
+}));
+
+jest.mock('@clerk/clerk-expo', () => ({
+    useUser: () => ({
+        user: {
+            id: 'u_1',
+        },
+    }),
+}));
+
 const mockPost = jest.fn();
 jest.mock('@/lib/api', () => ({
     useApi: () => ({
@@ -99,25 +116,34 @@ jest.mock('@/components/SafeScreen', () => ({
     default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-jest.mock('@/components/PrimaryButton', () => ({
-    PrimaryButton: ({ title, onPress }: any) => (
-        <Text onPress={onPress}>{title}</Text>
-    ),
-}));
+jest.mock('@/components/PrimaryButton', () => {
+    const { Text: MockText } = require('react-native');
+    return {
+        PrimaryButton: ({ title, onPress }: any) => (
+            <MockText onPress={onPress}>{title}</MockText>
+        ),
+    };
+});
 
 jest.mock('@/components/OrderSummary', () => ({
     __esModule: true,
-    default: () => <Text>OrderSummary</Text>,
+    default: () => {
+        const { Text: MockText } = require('react-native');
+        return <MockText>OrderSummary</MockText>;
+    },
 }));
 
 jest.mock('@/components/AddressSelectionModal', () => ({
     __esModule: true,
-    default: ({ visible, onProceed }: any) => visible ? (
-        <View>
-            <Text>Select Delivery Address</Text>
-            <Text onPress={() => onProceed({ fullName: 'John', city: 'City' })}>Proceed</Text>
-        </View>
-    ) : null,
+    default: ({ visible, onProceed }: any) => {
+        const { View: MockView, Text: MockText } = require('react-native');
+        return visible ? (
+            <MockView>
+                <MockText>Select Delivery Address</MockText>
+                <MockText onPress={() => onProceed({ fullName: 'John', city: 'City' })}>Proceed</MockText>
+            </MockView>
+        ) : null;
+    },
 }));
 
 jest.mock('@/components/ConfirmModal', () => ({

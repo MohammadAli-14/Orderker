@@ -19,6 +19,7 @@ export const useProfile = () => {
         data: profile,
         isLoading,
         isError,
+        refetch,
     } = useQuery({
         queryKey: ["profile"],
         queryFn: async () => {
@@ -41,6 +42,7 @@ export const useProfile = () => {
         profile,
         isLoading,
         isError,
+        refreshProfile: refetch,
         updateProfile: updateProfileMutation.mutate,
         isUpdating: updateProfileMutation.isPending,
     };

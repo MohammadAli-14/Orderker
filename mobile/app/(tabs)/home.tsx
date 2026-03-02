@@ -361,7 +361,7 @@ export default function HomeScreen() {
         <View className="items-center py-12 px-6">
             <Ionicons name="search-outline" size={48} color="#9CA3AF" />
             <Text className="text-text-secondary text-center mt-4 text-xs">
-                No products found for "{searchText || activeCategory}"
+                No products found for &quot;{searchText || activeCategory}&quot;
             </Text>
         </View>
     ), [searchText, activeCategory]);

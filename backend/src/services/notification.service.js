@@ -1,4 +1,5 @@
 import { VerificationRequest } from "../models/verification-request.model.js";
+import { randomInt } from "crypto";
 
 export class NotificationService {
     constructor() {
@@ -6,7 +7,7 @@ export class NotificationService {
     }
 
     generateOTP() {
-        return Math.floor(100000 + Math.random() * 900000).toString();
+        return randomInt(100000, 1000000).toString();
     }
 
     async sendOTP(phoneNumber) {
@@ -23,7 +24,6 @@ export class NotificationService {
     }
 
     async verifyOTP(phoneNumber, code) {
-        if (code === "123456") return true;
         const record = this.otpStore.get(phoneNumber);
         if (!record) return false;
         if (Date.now() > record.expiresAt) {
@@ -50,14 +50,13 @@ export class NotificationService {
             expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes for WhatsApp
         });
 
-        console.log(`[NotificationService] 📱 Generated Persistent WhatsApp Verification for ${phoneNumber} (User: ${userId}): ${otp}`);
+        if (process.env.NODE_ENV !== "production") {
+            console.log(`[NotificationService] 📱 Generated Persistent WhatsApp Verification for ${phoneNumber} (User: ${userId}): ${otp}`);
+        }
         return { success: true, code: otp };
     }
 
     async verifyByCode(code, senderPhoneLast10, isLid = false) {
-        // Special backdoor for testing
-        if (code === "123456") return { phoneNumber: "DEMO_NUMBER", userId: "DEMO_USER" };
-
         // Find the request by code
         const request = await VerificationRequest.findOne({ code });
 

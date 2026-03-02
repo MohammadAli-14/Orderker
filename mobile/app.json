@@ -2,7 +2,7 @@
   "expo": {
     "name": "Orderker",
     "slug": "orderker",
-    "version": "3.0.0",
+    "version": "5.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/final-icon-foreground.png",
     "scheme": "mobile",

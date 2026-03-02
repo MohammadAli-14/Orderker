@@ -118,7 +118,7 @@ export default function WelcomeScreen() {
                             Welcome to <Text style={styles.titleHighlight}>Orderker</Text>
                         </Text>
                         <Text style={styles.subtitle}>
-                            Pakistan's fastest grocery delivery.{"\n"}Fresh products at your doorstep.
+                            Pakistan&apos;s fastest grocery delivery.{"\n"}Fresh products at your doorstep.
                         </Text>
                     </View>
 
