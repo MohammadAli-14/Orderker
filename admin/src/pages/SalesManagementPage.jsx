@@ -18,6 +18,22 @@ import { flashSaleApi, productApi } from "../lib/api";
 import { formatCurrency } from "../lib/utils";
 import toast from "react-hot-toast";
 
+const toLocalDateTimeInputValue = (dateValue) => {
+    if (!dateValue) return "";
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return "";
+
+    const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+    return localDate.toISOString().slice(0, 16);
+};
+
+const localDateTimeInputToUTCISO = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toISOString();
+};
+
 function SalesManagementPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingSale, setEditingSale] = useState(null);
@@ -86,8 +102,8 @@ function SalesManagementPage() {
             setEditingSale(sale);
             setFormData({
                 title: sale.title,
-                startTime: new Date(sale.startTime).toISOString().slice(0, 16),
-                endTime: new Date(sale.endTime).toISOString().slice(0, 16),
+                startTime: toLocalDateTimeInputValue(sale.startTime),
+                endTime: toLocalDateTimeInputValue(sale.endTime),
                 discountType: sale.discountType,
                 globalDiscountPercent: sale.globalDiscountPercent,
                 products: sale.products || [],
@@ -130,10 +146,27 @@ function SalesManagementPage() {
             return toast.error("Please select at least one product");
         }
 
+        const startTimeISO = localDateTimeInputToUTCISO(formData.startTime);
+        const endTimeISO = localDateTimeInputToUTCISO(formData.endTime);
+
+        if (!startTimeISO || !endTimeISO) {
+            return toast.error("Please enter valid start and end times");
+        }
+
+        if (new Date(endTimeISO).getTime() <= new Date(startTimeISO).getTime()) {
+            return toast.error("End time must be after start time");
+        }
+
+        const payload = {
+            ...formData,
+            startTime: startTimeISO,
+            endTime: endTimeISO,
+        };
+
         if (editingSale) {
-            updateMutation.mutate({ id: editingSale._id, payload: formData });
+            updateMutation.mutate({ id: editingSale._id, payload });
         } else {
-            createMutation.mutate(formData);
+            createMutation.mutate(payload);
         }
     };
 

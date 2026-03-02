@@ -8,8 +8,8 @@ import { useEffect } from "react";
 // For local development with simulator:
 // const API_URL = "http://localhost:3000/api";
 
-// Use your deployed backend URL for production/remote testing
-const API_URL = "https://orderker.onrender.com/api";
+const rawApiUrl = process.env.EXPO_PUBLIC_API_URL || "https://orderker.onrender.com";
+const API_URL = rawApiUrl.endsWith("/api") ? rawApiUrl : `${rawApiUrl.replace(/\/$/, "")}/api`;
 
 const api = axios.create({
   baseURL: API_URL,

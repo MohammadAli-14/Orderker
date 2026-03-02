@@ -1,5 +1,46 @@
 import { FlashSale } from "../models/flashSale.model.js";
 
+const hasTimeZoneOffset = (value) => /(?:Z|[+\-]\d{2}:\d{2})$/i.test(value);
+
+const parseFlashSaleDate = (value, fieldName) => {
+    if (value instanceof Date) {
+        if (Number.isNaN(value.getTime())) {
+            throw new Error(`Invalid ${fieldName}`);
+        }
+        return value;
+    }
+
+    if (typeof value !== "string" || value.trim() === "") {
+        throw new Error(`${fieldName} is required`);
+    }
+
+    if (!hasTimeZoneOffset(value)) {
+        throw new Error(`${fieldName} must include timezone (ISO 8601 with Z or ±HH:MM)`);
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        throw new Error(`Invalid ${fieldName}`);
+    }
+
+    return parsed;
+};
+
+const normalizeFlashSalePayload = (payload) => {
+    const startTime = parseFlashSaleDate(payload.startTime, "startTime");
+    const endTime = parseFlashSaleDate(payload.endTime, "endTime");
+
+    if (endTime.getTime() <= startTime.getTime()) {
+        throw new Error("endTime must be after startTime");
+    }
+
+    return {
+        ...payload,
+        startTime,
+        endTime,
+    };
+};
+
 // Helper: Check if another sale is already ACTIVE (excluding a given ID)
 const hasActiveSaleConflict = async (excludeId = null) => {
     const query = { status: "ACTIVE" };
@@ -10,8 +51,15 @@ const hasActiveSaleConflict = async (excludeId = null) => {
 // Admin: Create Campaign
 export const createFlashSale = async (req, res) => {
     try {
+        let normalizedPayload;
+        try {
+            normalizedPayload = normalizeFlashSalePayload(req.body);
+        } catch (validationError) {
+            return res.status(400).json({ message: validationError.message });
+        }
+
         // Block creating a new ACTIVE sale if one already exists
-        if (req.body.status === "ACTIVE") {
+        if (normalizedPayload.status === "ACTIVE") {
             const existing = await hasActiveSaleConflict();
             if (existing) {
                 return res.status(409).json({
@@ -20,7 +68,7 @@ export const createFlashSale = async (req, res) => {
             }
         }
 
-        const flashSale = await FlashSale.create(req.body);
+        const flashSale = await FlashSale.create(normalizedPayload);
         res.status(201).json(flashSale);
     } catch (error) {
         console.error("Error creating flash sale:", error);
@@ -43,9 +91,15 @@ export const getAllFlashSales = async (req, res) => {
 export const updateFlashSale = async (req, res) => {
     try {
         const { id } = req.params;
+        let normalizedPayload;
+        try {
+            normalizedPayload = normalizeFlashSalePayload(req.body);
+        } catch (validationError) {
+            return res.status(400).json({ message: validationError.message });
+        }
 
         // Block setting status to ACTIVE if another sale is already active
-        if (req.body.status === "ACTIVE") {
+        if (normalizedPayload.status === "ACTIVE") {
             const existing = await hasActiveSaleConflict(id);
             if (existing) {
                 return res.status(409).json({
@@ -54,7 +108,15 @@ export const updateFlashSale = async (req, res) => {
             }
         }
 
-        const updated = await FlashSale.findByIdAndUpdate(id, req.body, { new: true });
+        const updated = await FlashSale.findByIdAndUpdate(id, normalizedPayload, {
+            new: true,
+            runValidators: true,
+        });
+
+        if (!updated) {
+            return res.status(404).json({ message: "Flash sale not found" });
+        }
+
         res.json(updated);
     } catch (error) {
         console.error("Error updating flash sale:", error);
