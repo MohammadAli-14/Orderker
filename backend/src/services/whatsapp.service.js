@@ -79,7 +79,29 @@ class WhatsAppService {
         return delay;
     }
 
-    // Destroy old socket completely before creating a new one
+    getBotNumber() {
+        if (!this.sock || !this.sock.user || !this.sock.user.id) return null;
+        // Extract the raw phone number (e.g., "923123456789" from "923123456789:1@s.whatsapp.net")
+        return "+" + this.sock.user.id.split(':')[0].split('@')[0];
+    }
+
+    // Safely extract text from any WhatsApp message type (including Disappearing Messages)
+    extractTextFromMessage(msg) {
+        if (!msg || !msg.message) return null;
+        const m = msg.message;
+
+        if (m.conversation) return m.conversation;
+        if (m.extendedTextMessage?.text) return m.extendedTextMessage.text;
+
+        if (m.ephemeralMessage?.message) {
+            const em = m.ephemeralMessage.message;
+            if (em.conversation) return em.conversation;
+            if (em.extendedTextMessage?.text) return em.extendedTextMessage.text;
+        }
+
+        return null;
+    }
+
     destroySocket() {
         if (this.sock) {
             try {
@@ -253,7 +275,14 @@ class WhatsAppService {
         this.sock.ev.on("messages.upsert", async (m) => {
             const msg = m.messages[0];
             if (!msg.key.fromMe && m.type === "notify") {
-                const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+                const text = this.extractTextFromMessage(msg);
+
+                if (text) {
+                    console.log(`[WhatsAppService] 💬 Incoming Text: "${text}" from ${msg.key.remoteJid}`);
+                } else {
+                    console.log(`[WhatsAppService] 📎 Incoming Non-Text/Unhandled from ${msg.key.remoteJid}`);
+                }
+
                 if (text && text.startsWith("VERIFY:")) {
                     const code = text.split("VERIFY:")[1].trim();
                     const jid = msg.key.remoteJid;

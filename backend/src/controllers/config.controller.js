@@ -1,3 +1,4 @@
+import { whatsappService } from "../services/whatsapp.service.js";
 import { ENV } from "../config/env.js";
 import { FlashSale } from "../models/flashSale.model.js";
 
@@ -63,7 +64,7 @@ export async function getAppConfig(req, res) {
                 enable_wishlist: true,
                 enable_jazzcash: true,
                 enable_easypaisa: true,
-                whatsapp_bot_number: ENV.WHATSAPP_BOT_NUMBER
+                whatsapp_bot_number: whatsappService.getBotNumber() || ENV.WHATSAPP_BOT_NUMBER
             }
         };
 
