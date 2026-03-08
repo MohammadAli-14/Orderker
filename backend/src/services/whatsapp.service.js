@@ -194,6 +194,8 @@ class WhatsAppService {
             }
 
             if (connection === "close") {
+                console.error("[WhatsAppService] 🔴 Unhandled Disconnect Error Dump:", lastDisconnect?.error);
+
                 const statusCode = (lastDisconnect?.error instanceof Boom)
                     ? lastDisconnect.error.output.statusCode
                     : 0;

@@ -1,4 +1,4 @@
-import { initAuthCreds, proto } from '@whiskeysockets/baileys';
+import { initAuthCreds, proto, BufferJSON } from '@whiskeysockets/baileys';
 import { WhatsAppAuth } from '../models/whatsapp-auth.model.js';
 
 /**
@@ -6,28 +6,24 @@ import { WhatsAppAuth } from '../models/whatsapp-auth.model.js';
  * Replaces useMultiFileAuthState to ensure 100% Stateless Server Operations
  */
 export const useMongoDBAuthState = async (sessionId = 'default') => {
-    // Custom replacer to handle Uint8Arrays natively
-    const replacer = (k, v) => {
-        if (Buffer.isBuffer(v) || v instanceof Uint8Array || v?.type === 'Buffer') {
-            return { type: 'Buffer', data: Buffer.isBuffer(v) ? v.data || Array.from(v) : Array.from(v) };
-        }
-        return v;
-    };
-
-    // Custom reviver to restore Uint8Arrays naturally required by Signal
-    const reviver = (k, v) => {
-        if (v && typeof v === 'object' && v.type === 'Buffer' && Array.isArray(v.data)) {
-            return Buffer.from(v.data);
-        }
-        return v;
-    };
+    // Native Baileys BufferJSON perfectly handles all Uint8Array cryptographic keys
+    const replacer = BufferJSON.replacer;
+    const reviver = BufferJSON.reviver;
 
     // Helper to read data from DB mapping to our compound index
     const readData = async (collectionName, key) => {
         try {
             const result = await WhatsAppAuth.findOne({ sessionId, collectionName, key });
             if (result && result.data) {
-                return JSON.parse(result.data, reviver);
+                const parsed = JSON.parse(result.data, reviver);
+                if (key === 'creds' && parsed.noiseKey) {
+                    console.log(`[MongoDBAuthState] Read creds noiseKey.private isBuffer:`, Buffer.isBuffer(parsed.noiseKey.private));
+                    if (!Buffer.isBuffer(parsed.noiseKey.private)) {
+                        console.log(`[MongoDBAuthState] RAW DATA:`, result.data.substring(0, 150));
+                        console.log(`[MongoDBAuthState] PARSED DATA:`, parsed.noiseKey.private);
+                    }
+                }
+                return parsed;
             }
             return null;
         } catch (error) {
