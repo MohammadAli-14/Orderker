@@ -8,8 +8,8 @@ import { WhatsAppAuth } from '../models/whatsapp-auth.model.js';
 export const useMongoDBAuthState = async (sessionId = 'default') => {
     // Custom replacer to handle Uint8Arrays natively
     const replacer = (k, v) => {
-        if (v && v.type === 'Buffer') {
-            return { type: 'Buffer', data: v.data };
+        if (Buffer.isBuffer(v) || v instanceof Uint8Array || v?.type === 'Buffer') {
+            return { type: 'Buffer', data: Buffer.isBuffer(v) ? v.data || Array.from(v) : Array.from(v) };
         }
         return v;
     };
