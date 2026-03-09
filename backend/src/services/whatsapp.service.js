@@ -85,21 +85,88 @@ class WhatsAppService {
         return "+" + this.sock.user.id.split(':')[0].split('@')[0];
     }
 
-    // Safely extract text from any WhatsApp message type (including Disappearing Messages)
+    // Safely extract text from ANY WhatsApp message type
+    // Handles: conversation, extended, ephemeral, viewOnce, viewOnceV2, edited, documentWithCaption
     extractTextFromMessage(msg) {
         if (!msg || !msg.message) return null;
         const m = msg.message;
 
+        // Direct text
         if (m.conversation) return m.conversation;
         if (m.extendedTextMessage?.text) return m.extendedTextMessage.text;
 
+        // Disappearing messages (ephemeral)
         if (m.ephemeralMessage?.message) {
             const em = m.ephemeralMessage.message;
             if (em.conversation) return em.conversation;
             if (em.extendedTextMessage?.text) return em.extendedTextMessage.text;
         }
 
+        // View-once V1
+        if (m.viewOnceMessage?.message) {
+            const vm = m.viewOnceMessage.message;
+            if (vm.conversation) return vm.conversation;
+            if (vm.extendedTextMessage?.text) return vm.extendedTextMessage.text;
+        }
+
+        // View-once V2 (newer WhatsApp format)
+        if (m.viewOnceMessageV2?.message) {
+            const vm2 = m.viewOnceMessageV2.message;
+            if (vm2.conversation) return vm2.conversation;
+            if (vm2.extendedTextMessage?.text) return vm2.extendedTextMessage.text;
+        }
+
+        // Edited messages
+        if (m.editedMessage?.message) {
+            const edited = m.editedMessage.message;
+            if (edited.conversation) return edited.conversation;
+            if (edited.extendedTextMessage?.text) return edited.extendedTextMessage.text;
+            if (edited.protocolMessage?.editedMessage?.conversation) return edited.protocolMessage.editedMessage.conversation;
+        }
+
+        // Protocol message (edits)
+        if (m.protocolMessage?.editedMessage) {
+            const pe = m.protocolMessage.editedMessage;
+            if (pe.conversation) return pe.conversation;
+            if (pe.extendedTextMessage?.text) return pe.extendedTextMessage.text;
+        }
+
+        // Document with caption
+        if (m.documentWithCaptionMessage?.message?.documentMessage?.caption) {
+            return m.documentWithCaptionMessage.message.documentMessage.caption;
+        }
+
+        // Log unknown formats for debugging
+        const knownKeys = Object.keys(m).filter(k => k !== 'messageContextInfo');
+        if (knownKeys.length > 0) {
+            console.log(`[WhatsAppService] ⚠️ Unhandled message format: keys=[${knownKeys.join(', ')}]`);
+        }
+
         return null;
+    }
+
+    // Retry-safe wrapper for sendMessage
+    async safeSendMessage(jid, content, retries = 2) {
+        for (let attempt = 1; attempt <= retries + 1; attempt++) {
+            try {
+                if (!this.sock) {
+                    throw new Error('Socket is null — bot may be disconnected');
+                }
+                const result = await this.sock.sendMessage(jid, content);
+                if (attempt > 1) {
+                    console.log(`[WhatsAppService] ✅ sendMessage succeeded on attempt ${attempt}`);
+                }
+                return result;
+            } catch (err) {
+                console.error(`[WhatsAppService] ❌ sendMessage attempt ${attempt}/${retries + 1} failed:`, err.message);
+                if (attempt <= retries) {
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                } else {
+                    console.error(`[WhatsAppService] 🚫 sendMessage FINAL FAILURE to ${jid} after ${retries + 1} attempts`);
+                    throw err;
+                }
+            }
+        }
     }
 
     destroySocket() {
@@ -137,6 +204,10 @@ class WhatsAppService {
             logger: this.logger,
             browser: ["OrderKer Bot", "Chrome", "4.0.0"],
             syncFullHistory: false,
+            // CRITICAL: Prevent event buffer from intercepting real-time messages
+            shouldSyncHistoryMessage: () => false,
+            // Ensure bot appears active on WhatsApp network
+            markOnlineOnConnect: true,
             patchMessageBeforeSending: (message) => {
                 const requiresPatch = !!(
                     message.buttonsMessage ||
@@ -194,8 +265,6 @@ class WhatsAppService {
             }
 
             if (connection === "close") {
-                console.error("[WhatsAppService] 🔴 Unhandled Disconnect Error Dump:", lastDisconnect?.error);
-
                 const statusCode = (lastDisconnect?.error instanceof Boom)
                     ? lastDisconnect.error.output.statusCode
                     : 0;
@@ -275,21 +344,51 @@ class WhatsAppService {
         });
 
         this.sock.ev.on("messages.upsert", async (m) => {
-            const msg = m.messages[0];
-            if (!msg.key.fromMe && m.type === "notify") {
-                const text = this.extractTextFromMessage(msg);
+            try {
+                // DIAGNOSTIC: Log raw event for every messages.upsert
+                const msgCount = m.messages?.length || 0;
+                console.log(`[WhatsAppService] 📨 RAW EVENT: type=${m.type}, count=${msgCount}`);
 
-                if (text) {
-                    console.log(`[WhatsAppService] 💬 Incoming Text: "${text}" from ${msg.key.remoteJid}`);
-                } else {
-                    console.log(`[WhatsAppService] 📎 Incoming Non-Text/Unhandled from ${msg.key.remoteJid}`);
+                if (!m.messages || msgCount === 0) {
+                    console.log(`[WhatsAppService] ⚠️ Empty messages array in upsert event`);
+                    return;
                 }
 
-                if (text && text.startsWith("VERIFY:")) {
-                    const code = text.split("VERIFY:")[1].trim();
-                    const jid = msg.key.remoteJid;
-                    await this.handleVerification(msg.key.remoteJid, code);
+                for (const msg of m.messages) {
+                    // DIAGNOSTIC: Log every message's metadata
+                    const jid = msg.key?.remoteJid || 'unknown';
+                    const fromMe = msg.key?.fromMe;
+                    console.log(`[WhatsAppService] 📨 MSG: jid=${jid}, fromMe=${fromMe}, type=${m.type}, hasMessage=${!!msg.message}`);
+
+                    // Skip our own messages
+                    if (fromMe) {
+                        console.log(`[WhatsAppService] ⏭️ Skipping own message`);
+                        continue;
+                    }
+
+                    // Process BOTH "notify" (real-time) and "append" (buffered) types
+                    // Previously only "notify" was processed — this caused silent drops
+                    if (m.type !== "notify" && m.type !== "append") {
+                        console.log(`[WhatsAppService] ⏭️ Skipping non-notify/append type: ${m.type}`);
+                        continue;
+                    }
+
+                    const text = this.extractTextFromMessage(msg);
+
+                    if (text) {
+                        console.log(`[WhatsAppService] 💬 Incoming Text: "${text}" from ${jid}`);
+                    } else {
+                        console.log(`[WhatsAppService] 📎 Incoming Non-Text/Unhandled from ${jid}`);
+                    }
+
+                    if (text && text.startsWith("VERIFY:")) {
+                        const code = text.split("VERIFY:")[1].trim();
+                        console.log(`[WhatsAppService] 🔐 Processing VERIFY code: ${code} from ${jid}`);
+                        await this.handleVerification(jid, code);
+                    }
                 }
+            } catch (err) {
+                console.error(`[WhatsAppService] 🚨 CRITICAL: messages.upsert handler crashed:`, err.message, err.stack);
             }
         });
     }
@@ -327,7 +426,7 @@ class WhatsAppService {
                 verifiedData = await notificationService.verifyByCode(code, senderPhoneLast10, isLid);
 
                 if (!verifiedData) {
-                    await this.sock.sendMessage(jid, {
+                    await this.safeSendMessage(jid, {
                         text: `❌ Verification code "${code}" not found or already used. Please request a new one in the app.`
                     });
                     return;
@@ -338,7 +437,7 @@ class WhatsAppService {
 
                 if (!user) {
                     console.log(`[WhatsAppService] ❌ User Session Missing: ${userId}`);
-                    await this.sock.sendMessage(jid, { text: `❌ Could not find a matching user session for this code.` });
+                    await this.safeSendMessage(jid, { text: `❌ Could not find a matching user session for this code.` });
                     return;
                 }
 
@@ -365,7 +464,7 @@ class WhatsAppService {
                     await user.save();
 
                     console.log(`[WhatsAppService] ⚠️ Identity resolution failed for ${normalizedDigits}. Reason: ${failMsg}`);
-                    await this.sock.sendMessage(jid, { text: `❌ ${failMsg}` });
+                    await this.safeSendMessage(jid, { text: `❌ ${failMsg}` });
                     return;
                 }
 
@@ -381,7 +480,7 @@ class WhatsAppService {
                         console.log(`[WhatsAppService] ⚠️ Could not resolve LID for ${resolvedJid}. Rejecting (fail-safe).`);
                         user.lastVerificationError = "Could not verify ownership. Please try again.";
                         await user.save();
-                        await this.sock.sendMessage(jid, { text: `❌ Could not verify ownership of ${targetPhone}. Please try again in a moment.` });
+                        await this.safeSendMessage(jid, { text: `❌ Could not verify ownership of ${targetPhone}. Please try again in a moment.` });
                         return;
                     }
 
@@ -393,7 +492,7 @@ class WhatsAppService {
                         console.log(`[WhatsAppService] 🛡️ LID MISMATCH: Sender LID ${senderLidRaw} ≠ Typed Number LID ${typedLidRaw}`);
                         user.lastVerificationError = "Ownership mismatch: This number belongs to a different WhatsApp account.";
                         await user.save();
-                        await this.sock.sendMessage(jid, {
+                        await this.safeSendMessage(jid, {
                             text: `❌ Security Alert: The number ${targetPhone} belongs to a different WhatsApp account. Please type YOUR OWN number in the app.`
                         });
                         return;
@@ -405,7 +504,7 @@ class WhatsAppService {
                         console.log(`[WhatsAppService] 🛡️ OWNERSHIP MISMATCH: Sender ${jid} tried to verify ${targetPhone} (Owner: ${resolvedJid})`);
                         user.lastVerificationError = "Ownership mismatch: Use your correct WhatsApp";
                         await user.save();
-                        await this.sock.sendMessage(jid, {
+                        await this.safeSendMessage(jid, {
                             text: `❌ Security Alert: You tried to verify ${targetPhone}, but you are sending from a different WhatsApp account.\n\nPlease type YOUR official number in the app.`
                         });
                         return;
@@ -418,7 +517,7 @@ class WhatsAppService {
                     user.lastVerificationError = "Account already locked to another WhatsApp";
                     await user.save();
                     console.log(`[WhatsAppService] 🛡️ LID LOCK: User ${user.name} tried to switch LID from ${user.whatsappLid} to ${fromRaw}`);
-                    await this.sock.sendMessage(jid, { text: `❌ Your account is already linked to a different WhatsApp. Use your original account.` });
+                    await this.safeSendMessage(jid, { text: `❌ Your account is already linked to a different WhatsApp. Use your original account.` });
                     return;
                 }
 
@@ -428,7 +527,7 @@ class WhatsAppService {
                         user.lastVerificationError = "WhatsApp belongs to another user";
                         await user.save();
                         console.log(`[WhatsAppService] 🛡️ CROSS-USER: LID ${fromRaw} already belongs to ${existingLidOwner.name}`);
-                        await this.sock.sendMessage(jid, {
+                        await this.safeSendMessage(jid, {
                             text: `❌ Your WhatsApp is already linked to another person (${existingLidOwner.name}).`
                         });
                         return;
@@ -447,7 +546,7 @@ class WhatsAppService {
 
                 await user.save();
 
-                await this.sock.sendMessage(jid, {
+                await this.safeSendMessage(jid, {
                     text: `✅ Success! Your OrderKer account (${user.name}) is now officially verified for ${targetPhone}.`
                 });
                 console.log(`[WhatsAppService] 👤 User ${user.name} verified successfully for ${targetPhone} (via ${isLid ? "LID" : "PN"}).`);
@@ -468,7 +567,7 @@ class WhatsAppService {
                         ? `❌ Security Alert: Your sender identity doesn't match the one requested.`
                         : `❌ This verification code has expired. Please request a new one.`;
 
-                    await this.sock.sendMessage(jid, { text: errorText });
+                    await this.safeSendMessage(jid, { text: errorText });
                     return;
                 }
                 throw err;
@@ -527,6 +626,27 @@ class WhatsAppService {
             await WhatsAppAuth.deleteMany({ sessionId: "default" });
         } catch (error) {
             console.error("Error clearing session:", error);
+        }
+    }
+
+    // Admin: Send test message to verify outbound works independently
+    async sendTestMessage(phone, message) {
+        if (this.status !== STATUS.CONNECTED || !this.sock) {
+            return { success: false, error: 'Bot is not connected' };
+        }
+
+        const digits = this.normalizeToDigits(phone);
+        const jid = `${digits}@s.whatsapp.net`;
+
+        try {
+            const start = Date.now();
+            await this.safeSendMessage(jid, { text: message || '🤖 Test message from OrderKer Bot' });
+            const elapsed = Date.now() - start;
+            console.log(`[WhatsAppService] ✅ Test message sent to ${jid} (${elapsed}ms)`);
+            return { success: true, deliveredAt: new Date().toISOString(), elapsed };
+        } catch (err) {
+            console.error(`[WhatsAppService] ❌ Test message failed to ${jid}:`, err.message);
+            return { success: false, error: err.message };
         }
     }
 

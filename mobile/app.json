@@ -2,7 +2,7 @@
   "expo": {
     "name": "Orderker",
     "slug": "orderker",
-    "version": "5.0.0",
+    "version": "6.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/final-icon-foreground.png",
     "scheme": "mobile",
@@ -77,6 +77,15 @@
         {
           "locationAlwaysPermission": "Allow Orderker to access your location to find the nearest delivery zones.",
           "locationWhenInUsePermission": "Allow Orderker to access your location to find the nearest delivery zones."
+        }
+      ],
+      "./withMoveJitPackToEnd",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": true
+          }
         }
       ]
     ],

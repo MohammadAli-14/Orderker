@@ -25,3 +25,21 @@ export const restartWhatsApp = async (req, res) => {
         res.status(500).json({ message: "Failed to restart WhatsApp bot.", error: error.message });
     }
 };
+
+export const sendTestMessage = async (req, res) => {
+    try {
+        const { phone, message } = req.body;
+        if (!phone) {
+            return res.status(400).json({ error: "Phone number is required" });
+        }
+        const result = await whatsappService.sendTestMessage(phone, message);
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(503).json(result);
+        }
+    } catch (error) {
+        console.error("[WhatsApp Controller] Send test error:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
