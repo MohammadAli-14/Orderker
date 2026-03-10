@@ -331,6 +331,7 @@ class WhatsAppService {
                 this.reconnectAttempts = 0;
                 this.lastError = null;
                 console.log("[WhatsAppService] ✅ WhatsApp Bot is ONLINE!");
+                console.log(`[WhatsAppService] 📱 Bot Number: ${this.getBotNumber()}`);
 
                 // Only reset 440 counter after 5 minutes of stable connection
                 if (this.stableResetTimer) clearTimeout(this.stableResetTimer);
@@ -345,7 +346,6 @@ class WhatsAppService {
 
         this.sock.ev.on("messages.upsert", async (m) => {
             try {
-                // DIAGNOSTIC: Log raw event for every messages.upsert
                 const msgCount = m.messages?.length || 0;
                 console.log(`[WhatsAppService] 📨 RAW EVENT: type=${m.type}, count=${msgCount}`);
 
@@ -354,31 +354,26 @@ class WhatsAppService {
                     return;
                 }
 
+                // CRITICAL: Only process real-time "notify" messages
+                // "append" = history sync (old personal chats) — NEVER process as VERIFY
+                if (m.type !== "notify") {
+                    console.log(`[WhatsAppService] ⏭️ Skipping ${m.type} event (${msgCount} msgs) — only notify is processed`);
+                    return;
+                }
+
                 for (const msg of m.messages) {
-                    // DIAGNOSTIC: Log every message's metadata
                     const jid = msg.key?.remoteJid || 'unknown';
                     const fromMe = msg.key?.fromMe;
                     console.log(`[WhatsAppService] 📨 MSG: jid=${jid}, fromMe=${fromMe}, type=${m.type}, hasMessage=${!!msg.message}`);
 
-                    // Skip our own messages
-                    if (fromMe) {
-                        console.log(`[WhatsAppService] ⏭️ Skipping own message`);
-                        continue;
-                    }
-
-                    // Process BOTH "notify" (real-time) and "append" (buffered) types
-                    // Previously only "notify" was processed — this caused silent drops
-                    if (m.type !== "notify" && m.type !== "append") {
-                        console.log(`[WhatsAppService] ⏭️ Skipping non-notify/append type: ${m.type}`);
-                        continue;
-                    }
+                    if (fromMe) continue;
 
                     const text = this.extractTextFromMessage(msg);
 
                     if (text) {
                         console.log(`[WhatsAppService] 💬 Incoming Text: "${text}" from ${jid}`);
                     } else {
-                        console.log(`[WhatsAppService] 📎 Incoming Non-Text/Unhandled from ${jid}`);
+                        console.log(`[WhatsAppService] 📎 Non-Text from ${jid}`);
                     }
 
                     if (text && text.startsWith("VERIFY:")) {
@@ -627,6 +622,29 @@ class WhatsAppService {
         } catch (error) {
             console.error("Error clearing session:", error);
         }
+    }
+
+    // Admin: Completely wipe the WhatsApp session from MongoDB and restart
+    async wipeSession() {
+        console.log('[WhatsAppService] 🧹 Wiping WhatsApp session from MongoDB...');
+        this.destroySocket();
+        this.status = STATUS.DISCONNECTED;
+        this.connectedAt = null;
+        this.lastQrBase64 = null;
+
+        const { WhatsAppAuth } = await import('../models/whatsapp-auth.model.js');
+        const result = await WhatsAppAuth.deleteMany({ sessionId: 'default' });
+        console.log(`[WhatsAppService] 🧹 Deleted ${result.deletedCount} auth documents.`);
+        console.log('[WhatsAppService] 🔄 Restarting with fresh session (new QR code)...');
+
+        // Reset all counters
+        this.qrTimeoutCount = 0;
+        this.reconnectAttempts = 0;
+        this.conflict440Count = 0;
+        this.isShuttingDown = false;
+
+        await this.init();
+        return { success: true, deletedCount: result.deletedCount };
     }
 
     // Admin: Send test message to verify outbound works independently

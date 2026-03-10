@@ -1,3 +1,43 @@
+// ═══════════════════════════════════════════════════════════════════
+// CRITICAL: Global Auto-Recovery for Baileys Crypto Crash
+// Must be FIRST — catches fatal aesDecryptGCM errors that crash Node
+// ═══════════════════════════════════════════════════════════════════
+import mongoose from "mongoose";
+
+process.on('uncaughtException', async (err) => {
+  const isBaileysCrash = err.message?.includes('Unsupported state or unable to authenticate data')
+    || err.stack?.includes('aesDecryptGCM')
+    || err.stack?.includes('noise-handler');
+
+  if (isBaileysCrash) {
+    console.error('\n[CRITICAL] ══════════════════════════════════════════════════');
+    console.error('[CRITICAL] Baileys crypto crash detected: Corrupt WhatsApp session.');
+    console.error('[CRITICAL] Auto-wiping WhatsAppAuth collection to break crash loop...');
+    console.error('[CRITICAL] ══════════════════════════════════════════════════\n');
+
+    try {
+      // If mongoose is connected, wipe directly
+      if (mongoose.connection.readyState === 1) {
+        await mongoose.connection.collection('whatsappauths').deleteMany({});
+        console.log('[CRITICAL] ✅ WhatsAppAuth collection wiped successfully.');
+        console.log('[CRITICAL] Next restart will generate a fresh QR code.');
+      } else {
+        console.error('[CRITICAL] ⚠️ MongoDB not connected. Manual wipe needed.');
+      }
+    } catch (wipeErr) {
+      console.error('[CRITICAL] ❌ Failed to auto-wipe:', wipeErr.message);
+    }
+
+    console.error('[CRITICAL] Exiting process. Render will restart with clean state.');
+    process.exit(1);
+  }
+
+  // For non-Baileys crashes, log and exit
+  console.error('[FATAL] Uncaught Exception:', err.message);
+  console.error(err.stack);
+  process.exit(1);
+});
+
 import express from "express";
 import path from "path";
 import { clerkMiddleware } from "@clerk/express";

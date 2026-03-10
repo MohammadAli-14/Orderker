@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getWhatsAppStatus, getWhatsAppQr, restartWhatsApp, sendTestMessage } from "../controllers/whatsapp.controller.js";
+import { getWhatsAppStatus, getWhatsAppQr, restartWhatsApp, sendTestMessage, wipeSession } from "../controllers/whatsapp.controller.js";
 import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
 
 const router = Router();
@@ -12,5 +12,6 @@ router.get("/status", getWhatsAppStatus);
 router.get("/qr", getWhatsAppQr);
 router.post("/restart", restartWhatsApp);
 router.post("/send-test", sendTestMessage);
+router.post("/wipe-session", wipeSession);
 
 export default router;

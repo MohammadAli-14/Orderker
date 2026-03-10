@@ -43,3 +43,17 @@ export const sendTestMessage = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+export const wipeSession = async (req, res) => {
+    try {
+        console.log("[WhatsApp Controller] Admin requested session wipe.");
+        const result = await whatsappService.wipeSession();
+        res.json({
+            message: "WhatsApp session wiped. A new QR code will be generated.",
+            ...result
+        });
+    } catch (error) {
+        console.error("[WhatsApp Controller] Wipe session error:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
