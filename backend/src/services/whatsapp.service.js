@@ -354,29 +354,33 @@ class WhatsAppService {
                     return;
                 }
 
-                // CRITICAL: Only process real-time "notify" messages
-                // "append" = history sync (old personal chats) — NEVER process as VERIFY
-                if (m.type !== "notify") {
-                    console.log(`[WhatsAppService] ⏭️ Skipping ${m.type} event (${msgCount} msgs) — only notify is processed`);
+                // IMPORTANT: Baileys v7 event buffer converts real-time "notify" to "append" on flush.
+                // We MUST process BOTH types. However, skip bulk history loads (count > 5).
+                if (msgCount > 5) {
+                    console.log(`[WhatsAppService] ⏭️ Skipping bulk ${m.type} event (${msgCount} msgs) — likely history sync`);
                     return;
                 }
 
                 for (const msg of m.messages) {
                     const jid = msg.key?.remoteJid || 'unknown';
                     const fromMe = msg.key?.fromMe;
-                    console.log(`[WhatsAppService] 📨 MSG: jid=${jid}, fromMe=${fromMe}, type=${m.type}, hasMessage=${!!msg.message}`);
 
+                    // Skip own messages, group messages, and status broadcasts
                     if (fromMe) continue;
+                    if (jid.endsWith('@g.us')) continue;
+                    if (jid === 'status@broadcast') continue;
 
                     const text = this.extractTextFromMessage(msg);
 
                     if (text) {
-                        console.log(`[WhatsAppService] 💬 Incoming Text: "${text}" from ${jid}`);
+                        console.log(`[WhatsAppService] 💬 Incoming Text: "${text}" from ${jid} (${m.type})`);
                     } else {
+                        // Only log non-text in verbose for diagnostics
                         console.log(`[WhatsAppService] 📎 Non-Text from ${jid}`);
+                        continue;
                     }
 
-                    if (text && text.startsWith("VERIFY:")) {
+                    if (text.startsWith("VERIFY:")) {
                         const code = text.split("VERIFY:")[1].trim();
                         console.log(`[WhatsAppService] 🔐 Processing VERIFY code: ${code} from ${jid}`);
                         await this.handleVerification(jid, code);
